@@ -155,6 +155,15 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   outline-offset: 2px;
   background: #fff7ed;
 }
+.cob-check-hint {
+  color: #9a6b00;
+  font-weight: 600;
+  margin-top: 6px;
+}
+[data-theme="dark"] .cob-check-hint,
+html:not([data-theme="light"]) .cob-check-hint {
+  color: #fbbf24;
+}
 #genderField.needs-check .gender-toggle {
   outline: 2px solid #d97706;
   outline-offset: 2px;
@@ -512,7 +521,13 @@ button.clear-form-btn {
         <label class="field"><span>Age</span><select id="ageMode"></select></label>
         <label class="field hidden" id="ageMonthsWrap" style="margin-top:12px"><span>Age in months</span><select id="ageMonths"></select></label>
       </div>
-      <label class="field"><span>Country of birth</span><input id="countryOfBirth" type="text" autocomplete="off" placeholder="e.g. South Africa"></label>
+      <div>
+        <label class="field"><span>Country of birth</span><input id="countryOfBirth" type="text" autocomplete="off" placeholder="e.g. South Africa"></label>
+        <div class="chip-row cob-actions" style="margin-top:8px">
+          <button type="button" id="sameAsNationalityBtn">Same as nationality</button>
+        </div>
+        <div id="cobCheckHint" class="hint cob-check-hint hidden">Check with the patient. Nationality is not always the country of birth.</div>
+      </div>
       <label class="field"><span>Country (from)</span><input id="countryFrom" type="text" autocomplete="off" placeholder="Issuing country or country of residence"></label>
       <label class="field"><span>Cellphone</span><input id="cellphone" type="text" placeholder="e.g. +971 50 123 4567"></label>
     </div>
@@ -1700,6 +1715,8 @@ function mapEidNationality(raw) {
     if (!state.messageDirty) el("messagePreview").value = msg;
     el("copyFallback").value = msg;
     syncPreviewButtons();
+    syncSameAsNationalityBtn();
+    syncCobCheckHint();
     scheduleSave();
   }
   function bind(id, key) {
@@ -2055,6 +2072,65 @@ function mapEidNationality(raw) {
   function markFieldCheck(id, on) {
     var node = fieldCheckNode(id);
     if (node && node.classList) node.classList.toggle("needs-check", !!on);
+    if (id === "countryOfBirth") syncCobCheckHint();
+  }
+  function syncCobCheckHint() {
+    var hint = el("cobCheckHint");
+    if (!hint) return;
+    var node = fieldCheckNode("countryOfBirth");
+    var on = !!(node && node.classList && node.classList.contains("needs-check"));
+    hint.classList.toggle("hidden", !on);
+  }
+  function countryNameFromNationality(nat, other) {
+    nat = String(nat || "").trim();
+    other = String(other || "").trim();
+    if (nat === "Other") nat = other;
+    if (!nat) return "";
+    var specials = {
+      Scottish: "Scotland",
+      "Emirati (UAE)": "United Arab Emirates",
+      UK: "United Kingdom",
+      USA: "United States"
+    };
+    if (specials[nat]) return specials[nat];
+    if (typeof MrzTd1 !== "undefined") {
+      var tables = [MrzTd1.ISO3_TO_FORM, MrzTd1.ISO3_OTHER_NAMES];
+      var t, code, tbl;
+      for (t = 0; t < tables.length; t++) {
+        tbl = tables[t];
+        if (!tbl) continue;
+        for (code in tbl) {
+          if (Object.prototype.hasOwnProperty.call(tbl, code) && tbl[code] === nat) {
+            return (MrzTd1.mapIso3ToCountry && MrzTd1.mapIso3ToCountry(code)) || "";
+          }
+        }
+      }
+      var countries = MrzTd1.ISO3_TO_COUNTRY || {};
+      for (code in countries) {
+        if (Object.prototype.hasOwnProperty.call(countries, code) && countries[code] === nat) return nat;
+      }
+    }
+    return nat;
+  }
+  function suggestedCountryOfBirth() {
+    var nat = state.nationality === "Other" ? (state.nationalityOther || "") : (state.nationality || "");
+    return countryNameFromNationality(nat, state.nationalityOther) || String(state.countryFrom || "").trim();
+  }
+  function syncSameAsNationalityBtn() {
+    var btn = el("sameAsNationalityBtn");
+    if (!btn) return;
+    var v = suggestedCountryOfBirth();
+    btn.disabled = !v;
+    btn.setAttribute("aria-disabled", v ? "false" : "true");
+  }
+  function copyNationalityToCountryOfBirth() {
+    var v = suggestedCountryOfBirth();
+    if (!v) return;
+    state.countryOfBirth = v;
+    if (el("countryOfBirth")) el("countryOfBirth").value = v;
+    markFieldCheck("countryOfBirth", true);
+    touchForm();
+    refresh();
   }
   function clearAllFieldChecks() {
     ["patientName", "patientSurname", "eid", "nationality", "gender", "dateOfBirth", "ageMode", "countryOfBirth", "countryFrom"].forEach(function (id) {
@@ -2174,11 +2250,31 @@ function mapEidNationality(raw) {
       unread.push("Date of birth");
       markFieldCheck("dateOfBirth", true);
     }
-    take("Country of birth", "countryOfBirth", "countryOfBirth", parsed.countryOfBirth, { optional: parsed.cardKind !== "sa-front" && !parsed.highlightMissingCountries });
     var fromCountry = inferCountryFrom(parsed);
+    var existingCob = String((el("countryOfBirth") && el("countryOfBirth").value) || state.countryOfBirth || "").trim();
+    var keptTypedCob = false;
+    if (existingCob) {
+      state.countryOfBirth = existingCob;
+      if (el("countryOfBirth")) el("countryOfBirth").value = existingCob;
+      keptTypedCob = true;
+    } else {
+      var cobVal = parsed.countryOfBirth || "";
+      var cobSuggested = false;
+      if (!cobVal) {
+        cobVal = countryNameFromNationality(parsed.nationality, parsed.nationalityOther) || fromCountry;
+        if (cobVal) cobSuggested = true;
+      }
+      take("Country of birth", "countryOfBirth", "countryOfBirth", cobVal, { optional: parsed.cardKind !== "sa-front" && !parsed.highlightMissingCountries && !cobSuggested });
+      if (cobVal && (cobSuggested || (parsed.unsure && parsed.unsure.indexOf("countryOfBirth") !== -1))) {
+        markFieldCheck("countryOfBirth", true);
+      }
+    }
     take("Country (from)", "countryFrom", "countryFrom", fromCountry, { optional: !parsed.highlightMissingCountries });
     if (parsed.unsure && parsed.unsure.length) {
-      parsed.unsure.forEach(function (id) { markFieldCheck(id, true); });
+      parsed.unsure.forEach(function (id) {
+        if (keptTypedCob && id === "countryOfBirth") return;
+        markFieldCheck(id, true);
+      });
     }
     return { filledNames: filledNames, skipped: skipped, unread: unread };
   }
@@ -5263,8 +5359,11 @@ function mapEidNationality(raw) {
       "place of birth", "country of birth", "birth place", "birthplace", "place of origin", "lieu de naissance", "pays de naissance",
       "lugar de nacimiento", "pais de nacimiento", "local de nascimento", "naturalidade", "pais de nascimento", "geburtsort",
       "luogo di nascita", "comune di nascita", "geboorteplaats", "dogum yeri", "doğum yeri", "tempat lahir", "tempat",
+      "plek van geboorte", "lugar ng kapanganakan", "pob",
+      "janm sthan", "janma sthan",
       "مكان الميلاد", "محل الميلاد", "مكان الولادة", "بلد الميلاد", "محل الولادة"
     ],
+
     pobdob: [
       "place and date of birth", "date and place of birth", "lieu et date de naissance", "date et lieu de naissance",
       "lugar y fecha de nacimiento", "fecha y lugar de nacimiento", "luogo e data di nascita", "data e luogo di nascita",
@@ -5643,6 +5742,129 @@ function mapEidNationality(raw) {
     var M = root.MrzTd1 || {};
     return !!(M.ISO3_TO_COUNTRY && M.ISO3_TO_COUNTRY[code]);
   }
+  // Place-of-birth aliases and common cities -> ISO3. Used to turn a printed
+  // "Place of birth" line (city, country name, or 3-letter code) into a country.
+  var PLACE_ALIASES = {
+    rsa: "ZAF", zaf: "ZAF", za: "ZAF", "south africa": "ZAF", "republic of south africa": "ZAF",
+    uae: "ARE", are: "ARE", "united arab emirates": "ARE", "emirats arabes unis": "ARE",
+    ksa: "SAU", sau: "SAU", uk: "GBR", gbr: "GBR", "united kingdom": "GBR", "great britain": "GBR",
+    usa: "USA", us: "USA", "united states": "USA", "united states of america": "USA",
+    "hong kong": "HKG", hkg: "HKG", "hong kong sar": "HKG",
+    "south korea": "KOR", "korea republic of": "KOR", "republic of korea": "KOR",
+    "north korea": "PRK",
+    england: "GBR", scotland: "GBR", wales: "GBR", "northern ireland": "GBR"
+  };
+  var PLACE_CITIES = {
+    // South Africa
+    johannesburg: "ZAF", joburg: "ZAF", "jo burg": "ZAF", pretoria: "ZAF", tshwane: "ZAF",
+    "cape town": "ZAF", kaapstad: "ZAF", durban: "ZAF", bloemfontein: "ZAF",
+    "port elizabeth": "ZAF", gqeberha: "ZAF", "east london": "ZAF", soweto: "ZAF",
+    pietermaritzburg: "ZAF", kimberley: "ZAF", polokwane: "ZAF", pietersburg: "ZAF",
+    nelspruit: "ZAF", mbombela: "ZAF", rustenburg: "ZAF", welkom: "ZAF", witbank: "ZAF",
+    emalahleni: "ZAF", vereeniging: "ZAF", benoni: "ZAF", boksburg: "ZAF", germiston: "ZAF",
+    "kempton park": "ZAF", midrand: "ZAF", sandton: "ZAF", centurion: "ZAF",
+    stellenbosch: "ZAF", paarl: "ZAF", george: "ZAF", upington: "ZAF", mahikeng: "ZAF",
+    mmabatho: "ZAF", "richards bay": "ZAF", newcastle: "ZAF", springbok: "ZAF",
+    "east rand": "ZAF", "west rand": "ZAF", roodepoort: "ZAF", randburg: "ZAF",
+    krugersdorp: "ZAF", alberton: "ZAF", springs: "ZAF", brakpan: "ZAF",
+    "cape of good hope": "ZAF", transvaal: "ZAF", natal: "ZAF",
+    // India
+    mumbai: "IND", bombay: "IND", delhi: "IND", "new delhi": "IND",
+    bangalore: "IND", bengaluru: "IND", chennai: "IND", madras: "IND",
+    kolkata: "IND", calcutta: "IND", pune: "IND", poona: "IND", ahmedabad: "IND",
+    surat: "IND", jaipur: "IND", lucknow: "IND", kanpur: "IND", nagpur: "IND",
+    indore: "IND", bhopal: "IND", patna: "IND", ludhiana: "IND", agra: "IND",
+    nashik: "IND", vadodara: "IND", baroda: "IND", varanasi: "IND", benares: "IND",
+    kochi: "IND", cochin: "IND", thiruvananthapuram: "IND", trivandrum: "IND",
+    coimbatore: "IND", madurai: "IND", visakhapatnam: "IND", vizag: "IND",
+    chandigarh: "IND", noida: "IND", gurgaon: "IND", gurugram: "IND",
+    faridabad: "IND", ghaziabad: "IND", amritsar: "IND", jammu: "IND", srinagar: "IND",
+    ranchi: "IND", raipur: "IND", bhubaneswar: "IND", guwahati: "IND",
+    mysore: "IND", mysuru: "IND", puducherry: "IND", pondicherry: "IND",
+    goa: "IND", panaji: "IND", panjim: "IND", mangalore: "IND", mangaluru: "IND",
+    "andhra pradesh": "IND", "tamil nadu": "IND", "uttar pradesh": "IND",
+    kerala: "IND", karnataka: "IND", gujarat: "IND", rajasthan: "IND", punjab: "IND",
+    maharashtra: "IND", "west bengal": "IND", bihar: "IND", odisha: "IND", orissa: "IND",
+    // Pakistan
+    karachi: "PAK", lahore: "PAK", islamabad: "PAK", rawalpindi: "PAK", peshawar: "PAK",
+    faisalabad: "PAK", lyallpur: "PAK", multan: "PAK", quetta: "PAK", sialkot: "PAK",
+    gujranwala: "PAK", abbottabad: "PAK", mardan: "PAK", sukkur: "PAK",
+    bahawalpur: "PAK", sargodha: "PAK", sheikhupura: "PAK", peshawer: "PAK",
+    "khyber pakhtunkhwa": "PAK", sindh: "PAK", balochistan: "PAK",
+    // Philippines
+    manila: "PHL", "quezon city": "PHL", "metro manila": "PHL", cebu: "PHL", "cebu city": "PHL",
+    davao: "PHL", "davao city": "PHL", makati: "PHL", pasig: "PHL", taguig: "PHL",
+    caloocan: "PHL", calocan: "PHL", antipolo: "PHL", "cagayan de oro": "PHL",
+    zamboanga: "PHL", bacolod: "PHL", iloilo: "PHL", baguio: "PHL",
+    paranaque: "PHL", "las pinas": "PHL", muntinlupa: "PHL", pasay: "PHL",
+    valenzuela: "PHL", "general santos": "PHL", "rizal province": "PHL",
+    "luzon": "PHL", visayas: "PHL", mindanao: "PHL",
+    // Egypt
+    cairo: "EGY", giza: "EGY", alexandria: "EGY", luxor: "EGY", aswan: "EGY",
+    "port said": "EGY", suez: "EGY", tanta: "EGY", mansoura: "EGY", asyut: "EGY",
+    assiut: "EGY", fayoum: "EGY", fayum: "EGY", ismailia: "EGY", hurghada: "EGY",
+    "sharm el sheikh": "EGY", "sharm elsheikh": "EGY", damietta: "EGY", zagazig: "EGY",
+    minya: "EGY", qena: "EGY", sohag: "EGY", alexandrie: "EGY", lecaire: "EGY",
+    "al qahirah": "EGY", "al qahira": "EGY",
+    // Cities needed so existing ID tests still map place of birth without using the issuing country
+    berlin: "DEU", roma: "ITA", rome: "ITA", paris: "FRA", lyon: "FRA",
+    // Other places often seen in the UAE / on passports
+    london: "GBR", manchester: "GBR", birmingham: "GBR", glasgow: "GBR", edinburgh: "GBR",
+    dubai: "ARE", "abu dhabi": "ARE", sharjah: "ARE", ajman: "ARE",
+    dhaka: "BGD", chittagong: "BGD", chattogram: "BGD", sylhet: "BGD",
+    kathmandu: "NPL", pokhara: "NPL", colombo: "LKA", kandy: "LKA",
+    lagos: "NGA", abuja: "NGA", accra: "GHA", kumasi: "GHA", nairobi: "KEN", mombasa: "KEN",
+    "addis ababa": "ETH", istanbul: "TUR", ankara: "TUR", izmir: "TUR",
+    tehran: "IRN", beirut: "LBN", amman: "JOR", damascus: "SYR", baghdad: "IRQ",
+    riyadh: "SAU", jeddah: "SAU", jiddah: "SAU", mecca: "SAU", makkah: "SAU",
+    medina: "SAU", madinah: "SAU", doha: "QAT", kuwait: "KWT", "kuwait city": "KWT",
+    muscat: "OMN", manama: "BHR",
+    "new york": "USA", chicago: "USA", houston: "USA", "los angeles": "USA",
+    toronto: "CAN", vancouver: "CAN", sydney: "AUS", melbourne: "AUS",
+    "sao paulo": "BRA", "rio de janeiro": "BRA", lima: "PER", bogota: "COL",
+    jakarta: "IDN", surabaya: "IDN", bandung: "IDN",
+    "kuala lumpur": "MYS", singapore: "SGP", bangkok: "THA", "ho chi minh": "VNM", hanoi: "VNM",
+    "hong kong": "HKG", beijing: "CHN", shanghai: "CHN", guangzhou: "CHN",
+    tokyo: "JPN", osaka: "JPN", seoul: "KOR",
+    moscow: "RUS", warsaw: "POL", madrid: "ESP", barcelona: "ESP", lisbon: "PRT", lisboa: "PRT",
+    amsterdam: "NLD", rotterdam: "NLD", brussels: "BEL", vienna: "AUT", wien: "AUT",
+    zurich: "CHE", geneva: "CHE", dublin: "IRL",
+    // Arabic city names (after alef-normalisation in normKey)
+    "القاهره": "EGY", "القاهرة": "EGY",
+    "الإسكندريه": "EGY", "الاسكندريه": "EGY",
+    "الجيزه": "EGY",
+    "جوهانسبرغ": "ZAF", "بريتوريا": "ZAF",
+    "مومباي": "IND", "دلهي": "IND", "نيودلهي": "IND",
+    "كراتشي": "PAK", "لاهور": "PAK",
+    "مانيلا": "PHL"
+  };
+  function iso3ToCountryName(iso) {
+    var M = root.MrzTd1 || {};
+    if (!iso) return "";
+    return (M.mapIso3ToCountry && M.mapIso3ToCountry(iso)) || "";
+  }
+  // Map a printed Place of birth value (city, country, or 3-letter code) to a country name.
+  function mapPlaceToCountry(str) {
+    var raw = toLatinDigits(String(str || "")).replace(/\([^)]*\)/g, " ");
+    var k = normKey(raw);
+    if (!k) return "";
+    if (PLACE_ALIASES[k]) return iso3ToCountryName(PLACE_ALIASES[k]);
+    var toks = k.split(" ").filter(Boolean);
+    var foundAlias = "", foundCity = "", i, n, g;
+    for (n = Math.min(4, toks.length); n >= 1; n--) {
+      for (i = 0; i + n <= toks.length; i++) {
+        g = toks.slice(i, i + n).join(" ");
+        if (!foundAlias && PLACE_ALIASES[g]) foundAlias = PLACE_ALIASES[g];
+        if (!foundCity && PLACE_CITIES[g]) foundCity = PLACE_CITIES[g];
+      }
+    }
+    var fromName = findCountry(raw, true);
+    // An explicit country name or code in the line wins (e.g. "JOHANNESBURG RSA").
+    if (foundAlias) return iso3ToCountryName(foundAlias);
+    if (fromName) return iso3ToCountryName(fromName);
+    if (foundCity) return iso3ToCountryName(foundCity);
+    return "";
+  }
   // Find a country / nationality inside a string. Returns ISO3 or "".
   function findCountry(str, allowCode) {
     var raw = toLatinDigits(String(str || ""));
@@ -5750,6 +5972,16 @@ function mapEidNationality(raw) {
     return t.length >= 6 && t.length <= 18 && digits >= 4;
   }
 
+  function looksLikeOnlyPobLabel(s) {
+    var k = normKey(s);
+    if (!k) return true;
+    // Leftover bilingual label text such as "Plek van geboorte" or "Lugar ng kapanganakan".
+    if (matchLabelKey(k, 1)) return true;
+    if (PLACE_CITIES[k] || PLACE_ALIASES[k]) return false;
+    if (findCountry(s, true)) return false;
+    return /\b(birth|naissance|nacimiento|nascimento|geburt|geboorte|nascita|dogum|lahir|kapanganakan|pob)\b/.test(k)
+      || /ميلاد|جन्म/.test(k);
+  }
   function fieldValue(field, text, labelKeys, now) {
     var t = String(text || "").trim();
     if (!t) return null;
@@ -5783,6 +6015,7 @@ function mapEidNationality(raw) {
       case "pob": {
         var place2 = t.replace(/\s+/g, " ").trim();
         if (!/[A-Za-z\u00C0-\u024F\u0600-\u06FF]{2,}/.test(place2)) return null;
+        if (looksLikeOnlyPobLabel(place2)) return null;
         return { value: place2 };
       }
       case "idnum": {
@@ -6005,9 +6238,8 @@ function mapEidNationality(raw) {
     var countryOfBirth = "";
     var cobConf = 0;
     if (found.pob) {
-      var pc = findCountry(found.pob.value, true);
-      if (pc && M.mapIso3ToCountry) { countryOfBirth = M.mapIso3ToCountry(pc); cobConf = found.pob.conf; }
-      else if (issuer && M.mapIso3ToCountry) { countryOfBirth = M.mapIso3ToCountry(issuer); cobConf = 0.3; }
+      countryOfBirth = mapPlaceToCountry(found.pob.value);
+      if (countryOfBirth) cobConf = found.pob.conf || 0.5;
     }
     var fromIso = issuer || natIso;
     var countryFrom = fromIso && M.mapIso3ToCountry ? M.mapIso3ToCountry(fromIso) : "";
@@ -6038,7 +6270,8 @@ function mapEidNationality(raw) {
     if (out.dob && found.dob.conf < CONF) unsure.dateOfBirth = 1;
     if (out.nationality && found.nationality.conf < CONF) unsure.nationality = 1;
     if (out.docNumber && found.idnum.conf < CONF) unsure.eid = 1;
-    if (out.countryOfBirth && cobConf < CONF) unsure.countryOfBirth = 1;
+    // Place of birth is printed text, not a proof check: always ask the medic to confirm.
+    if (out.countryOfBirth) unsure.countryOfBirth = 1;
     if (out.countryFrom && !issuer) unsure.countryFrom = 1;
     out.unsure = Object.keys(unsure);
     out.fieldCount = countFields(out);
@@ -6105,6 +6338,7 @@ function mapEidNationality(raw) {
     parseSex: parseSex,
     findCountry: findCountry,
     findIssuer: findIssuer,
+    mapPlaceToCountry: mapPlaceToCountry,
     normKey: normKey,
     countFields: countFields,
     hasArabic: hasArabic,
@@ -7868,7 +8102,9 @@ function mapEidNationality(raw) {
     "sa-front": "the SA ID front",
     "saudi-front": "the Saudi ID front",
     "general": "the card front",
-    "general-ara": "the card front (with Arabic)"
+    "general-ara": "the card front (with Arabic)",
+    "typed": "what you already typed",
+    "suggested-nationality": "nationality (please check with the patient)"
   };
   var idReadSession = null;
 
@@ -7987,9 +8223,25 @@ function mapEidNationality(raw) {
       out.docNumber = front.parsed.eid;
       sources.docNumber = front.kind;
     }
+    var typedCob = idFormValue("countryOfBirth", formState);
+    if (typedCob) {
+      out.countryOfBirth = typedCob;
+      sources.countryOfBirth = "typed";
+      var uCob = out.unsure.indexOf("countryOfBirth");
+      if (uCob !== -1) out.unsure.splice(uCob, 1);
+    } else if (!out.countryOfBirth) {
+      var sugCob = countryNameFromNationality(out.nationality, out.nationalityOther) || out.countryFrom || "";
+      if (sugCob) {
+        out.countryOfBirth = sugCob;
+        sources.countryOfBirth = "suggested-nationality";
+        if (out.unsure.indexOf("countryOfBirth") === -1) out.unsure.push("countryOfBirth");
+        out.notes.push("Country of birth was copied from nationality. Please check with the patient, because they may have been born somewhere else.");
+      }
+    } else if (sources.countryOfBirth !== "sa-front" && out.unsure.indexOf("countryOfBirth") === -1) {
+      out.unsure.push("countryOfBirth");
+    }
     if (out.docNumber) out.eid = out.docNumber;
-    if (mrz) {
-      out.checks = mrz.parsed.checks;
+    if (mrz) {      out.checks = mrz.parsed.checks;
       out.confidence = mrz.parsed.confidence;
       if (mrz.parsed.issuingState) out.issuingState = mrz.parsed.issuingState;
     }
@@ -8536,6 +8788,9 @@ function mapEidNationality(raw) {
     if (norm.kind === "eid") maybeAdvanceEid();
     else eidAdvanceArmed = true;
   });
+  if (el("sameAsNationalityBtn")) {
+    el("sameAsNationalityBtn").addEventListener("click", function () { copyNationalityToCountryOfBirth(); });
+  }
   el("readId").addEventListener("click", function () { readId(); });
   bindMrzCropUi();
   el("fillFromCardText").addEventListener("click", function () {
