@@ -528,7 +528,7 @@ button.clear-form-btn {
         </div>
         <div id="cobCheckHint" class="hint cob-check-hint hidden">Check with the patient. Nationality is not always the country of birth.</div>
       </div>
-      <label class="field"><span>Country (from)</span><input id="countryFrom" type="text" autocomplete="off" placeholder="Issuing country or country of residence"></label>
+      <label class="field"><span>Resident of</span><input id="countryFrom" type="text" autocomplete="off" placeholder="Country where they live"></label>
       <label class="field"><span>Cellphone</span><input id="cellphone" type="text" placeholder="e.g. +971 50 123 4567"></label>
     </div>
 
@@ -1440,7 +1440,7 @@ function mapEidNationality(raw) {
     addLine(patient, "Surname", opts.patientSurname);
     addLine(patient, "ID / Passport", opts.eid);
     addLine(patient, "Country of birth", opts.countryOfBirth);
-    addLine(patient, "Country (from)", opts.countryFrom);
+    addLine(patient, "Resident of", opts.countryFrom);
     addLine(patient, "Gender", opts.gender);
     addLine(patient, "Nationality", opts.nationality);
     if (isDobValid(opts.dateOfBirth)) addLine(patient, "DOB", opts.dateOfBirth);
@@ -2269,7 +2269,7 @@ function mapEidNationality(raw) {
         markFieldCheck("countryOfBirth", true);
       }
     }
-    take("Country (from)", "countryFrom", "countryFrom", fromCountry, { optional: !parsed.highlightMissingCountries });
+    take("Resident of", "countryFrom", "countryFrom", fromCountry, { optional: !parsed.highlightMissingCountries });
     if (parsed.unsure && parsed.unsure.length) {
       parsed.unsure.forEach(function (id) {
         if (keptTypedCob && id === "countryOfBirth") return;
@@ -3108,7 +3108,7 @@ function mapEidNationality(raw) {
     var nameMsg = unreadNameStatus(parsed);
     if (!parsed.eid && !parsed.idNumber && !parsed.docNumber) missing.push("ID / Passport");
     if (!parsed.countryOfBirth && parsed.cardKind === "sa-front") missing.push("Country of birth");
-    if (!parsed.countryFrom && !inferCountryFrom(parsed)) missing.push("Country (from)");
+    if (!parsed.countryFrom && !inferCountryFrom(parsed)) missing.push("Resident of");
     if (!parsed.nationality) missing.push("Nationality");
     if (!parsed.gender) missing.push("Gender");
     if (!parsed.dob) missing.push("Date of birth");
@@ -8095,7 +8095,7 @@ function mapEidNationality(raw) {
   var ID_SESSION_MS = 30 * 60 * 1000;
   var ID_KEYS = ["name", "surname", "gender", "dob", "nationality", "docNumber", "countryFrom", "countryOfBirth"];
   var ID_FIELD_IDS = { name: "patientName", surname: "patientSurname", gender: "gender", dob: "dateOfBirth", nationality: "nationality", docNumber: "eid", countryFrom: "countryFrom", countryOfBirth: "countryOfBirth" };
-  var ID_FIELD_LABELS = { name: "Name", surname: "Surname", gender: "Gender", dob: "Date of birth", nationality: "Nationality", docNumber: "ID / Passport", countryFrom: "Country (from)", countryOfBirth: "Country of birth" };
+  var ID_FIELD_LABELS = { name: "Name", surname: "Surname", gender: "Gender", dob: "Date of birth", nationality: "Nationality", docNumber: "ID / Passport", countryFrom: "Resident of", countryOfBirth: "Country of birth" };
   var ID_SOURCE_LABELS = {
     "mrz": "the code lines (MRZ)",
     "eid-front": "the Emirates ID front",
