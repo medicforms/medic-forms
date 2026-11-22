@@ -270,6 +270,137 @@ button.clear-form-btn {
   margin: 8px 0 12px;
   font-weight: 600;
 }
+/* Optional MRZ crop step (test page only) */
+.mrz-crop-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  background: #0b0c0e;
+  color: var(--fg);
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-left: env(safe-area-inset-left, 0px);
+  overscroll-behavior: none;
+}
+.mrz-crop-stage {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  background: #000;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.mrz-crop-stage canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+.mrz-crop-box {
+  position: absolute;
+  box-sizing: border-box;
+  border: 3px solid #ffffff;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.55);
+  touch-action: none;
+  cursor: move;
+  z-index: 1;
+}
+.mrz-crop-handle {
+  position: absolute;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  z-index: 2;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.mrz-crop-handle::after {
+  content: "";
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  background: #ffffff;
+  border: 3px solid var(--accent);
+  border-radius: 4px;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.45);
+}
+.mrz-crop-handle[data-handle="nw"] { left: -22px; top: -22px; cursor: nwse-resize; }
+.mrz-crop-handle[data-handle="nw"]::after { left: 11px; top: 11px; }
+.mrz-crop-handle[data-handle="ne"] { right: -22px; top: -22px; cursor: nesw-resize; }
+.mrz-crop-handle[data-handle="ne"]::after { right: 11px; top: 11px; }
+.mrz-crop-handle[data-handle="sw"] { left: -22px; bottom: -22px; cursor: nesw-resize; }
+.mrz-crop-handle[data-handle="sw"]::after { left: 11px; bottom: 11px; }
+.mrz-crop-handle[data-handle="se"] { right: -22px; bottom: -22px; cursor: nwse-resize; }
+.mrz-crop-handle[data-handle="se"]::after { right: 11px; bottom: 11px; }
+.mrz-crop-bar {
+  flex: 0 0 auto;
+  padding: 12px 14px 14px;
+  background: var(--bg-card);
+  color: var(--fg);
+  border-top: 1px solid var(--border);
+}
+.mrz-crop-hint {
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.4;
+}
+.mrz-crop-bar #mrzCropRead {
+  width: 100%;
+  min-height: 56px;
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0 0 10px;
+}
+.read-id-btn {
+  min-height: 56px;
+  font-size: 18px;
+  font-weight: 700;
+  padding: 10px 20px;
+  flex: 1 1 260px;
+}
+.arabic-toggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+  min-height: 48px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-subtle);
+  color: var(--fg);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.arabic-toggle input {
+  width: 26px;
+  height: 26px;
+  margin: 0;
+  flex: 0 0 auto;
+  accent-color: var(--accent);
+}
+.arabic-toggle small { font-weight: 400; color: var(--muted); }
+.mrz-crop-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.mrz-crop-row button {
+  flex: 1 1 30%;
+  min-height: 48px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
 </style>
 </head>
 <body>
@@ -344,10 +475,13 @@ button.clear-form-btn {
       <div id="attachmentList"></div>
       <div class="hint" style="margin-top:8px">Attached files are sent with Share, not with Copy. They stay on this device until you share or remove them.</div>
       <div class="photo-btns" style="margin-top:10px">
-        <button type="button" id="readCard">Read card</button>
-        <button type="button" id="readMrz">Read ID / passport code (MRZ)</button>
+        <button type="button" id="readId" class="primary read-id-btn">Read ID (front or back)</button>
       </div>
-      <div class="hint" style="margin-top:6px">Works on the back of Emirates ID and other GCC IDs, and the photo page of passports. Photo of the whole page is fine. A PDF scan is also fine. You don't need to crop or rotate first. Photos stay on this device.</div>
+      <label class="arabic-toggle" for="cardHasArabic">
+        <input type="checkbox" id="cardHasArabic">
+        <span>Card has Arabic writing <small>(reads slower)</small></span>
+      </label>
+      <div class="hint" style="margin-top:6px">Works on the front or back of an ID card, or a passport photo page. Drag the box over the card (or just the code lines), or use the whole photo. Code lines (MRZ) are read first because they are the most accurate. Scan the back, then the front, to fill more boxes. PDF scans are fine. Photos stay on this device.</div>
       <div id="eidFillNote" class="hint hidden" style="margin-top:8px"></div>
       <label class="field" style="margin-top:10px">
         <span>Paste card text</span>
@@ -355,7 +489,7 @@ button.clear-form-btn {
         <textarea id="eidPaste" rows="6" placeholder="Paste the copied ID or passport code (or card text)"></textarea>
       </label>
       <div style="margin-top:10px"><button type="button" id="fillFromCardText">Fill from card text</button></div>
-      <div class="hint" style="margin-top:8px">Read card can read the front of an Emirates ID or a South African smart ID, and can turn a sideways photo the right way up. You can attach more than one photo. Pictures stay on this device and are not sent anywhere. If the reader can't run on this page, paste the card text above. Check every field by hand.</div>
+      <div class="hint" style="margin-top:8px">The reader can turn a sideways photo the right way up. You can attach more than one photo (for example front and back). Pictures stay on this device and are not sent anywhere. Arabic writing needs a small extra download the first time (about 0.7 MB). If the reader can't run on this page, paste the card text above. Check every field by hand.</div>
     </div>
     <div class="grid grid-2" style="margin-top:12px">
             <div class="field" id="genderField">
@@ -463,6 +597,27 @@ button.clear-form-btn {
     <button type="button" id="clearForm" class="clear-form-btn">Clear form</button>
     <div id="shareNote" class="hint hidden" style="margin-top:8px"></div>
   </div>
+  <div id="mrzCropOverlay" class="mrz-crop-overlay hidden" hidden role="dialog" aria-modal="true" aria-labelledby="mrzCropTitle">
+    <div id="mrzCropStage" class="mrz-crop-stage">
+      <canvas id="mrzCropCanvas"></canvas>
+      <div id="mrzCropBox" class="mrz-crop-box" aria-label="Code area">
+        <button type="button" class="mrz-crop-handle" data-handle="nw" aria-label="Resize from top left"></button>
+        <button type="button" class="mrz-crop-handle" data-handle="ne" aria-label="Resize from top right"></button>
+        <button type="button" class="mrz-crop-handle" data-handle="sw" aria-label="Resize from bottom left"></button>
+        <button type="button" class="mrz-crop-handle" data-handle="se" aria-label="Resize from bottom right"></button>
+      </div>
+    </div>
+    <div class="mrz-crop-bar">
+      <p id="mrzCropTitle" class="mrz-crop-hint">Drag the box over the code lines, then tap Read this area.</p>
+      <button type="button" id="mrzCropRead" class="primary">Read this area</button>
+      <div class="mrz-crop-row">
+        <button type="button" id="mrzCropWhole">Use whole photo</button>
+        <button type="button" id="mrzCropRotate">Turn 90°</button>
+        <button type="button" id="mrzCropCancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+
   <script>
 (function () {
   "use strict";
@@ -700,6 +855,15 @@ button.clear-form-btn {
     });
   })();
   function eidLabelMatchInfo(line, aliases) {
+    // The same lines are checked many times while reading passes are merged; remember the answers.
+    var memo = aliases && (aliases.__labelMemo || (aliases.__labelMemo = {}));
+    var mk = "k" + String(line);
+    if (memo && Object.prototype.hasOwnProperty.call(memo, mk)) return memo[mk] ? Object.assign({}, memo[mk]) : null;
+    var res = eidLabelMatchInfoRaw(line, aliases);
+    if (memo) { memo[mk] = res; if (++memo.__n > 5000) aliases.__labelMemo = null; else if (!memo.__n) memo.__n = 1; }
+    return res ? Object.assign({}, res) : null;
+  }
+  function eidLabelMatchInfoRaw(line, aliases) {
     var n = normalizeOcrLine(line);
     if (!n) return null;
     var lower = n.toLowerCase();
@@ -724,6 +888,8 @@ button.clear-form-btn {
         var phrase = words.slice(i, i + len).join(" ");
         for (var b = 0; b < aliases.length; b++) {
           var al = aliases[b];
+          // Edit distance is at least the length difference: skip pairs that can't match (keeps big reads quick).
+          if (Math.abs(phrase.length - al.length) > maxTypo(al)) continue;
           var d = levenshtein(phrase, al);
           if (d <= maxTypo(al) && d / Math.max(al.length, 1) <= 0.4) {
             var restWords = n.split(" ").filter(Boolean).slice(i + len).join(" ").replace(/^[:\-]\s*/, "");
@@ -896,12 +1062,33 @@ function parseEidGender(raw) {
     kind = kind || (key === "name" ? "name" : key === "nationality" ? "nationality" : "work");
     return pickBestValue(collectLabeledCandidates(lines, key), kind, isValue);
   }
+  function eidNumberLuhn(d) {
+    var sum = 0, alt = false;
+    for (var i = d.length - 1; i >= 0; i--) {
+      var n = d.charCodeAt(i) - 48;
+      if (alt) { n *= 2; if (n > 9) n -= 9; }
+      sum += n; alt = !alt;
+    }
+    return sum % 10 === 0;
+  }
   function parseEidNumber(text) {
     var mapped = String(text || "").replace(/[Oo]/g, "0").replace(/[Il|]/g, "1");
-    var digits = mapped.replace(/[^\d]/g, "");
-    var m = digits.match(/784\d{12}/);
-    if (!m) return "";
-    var d = m[0];
+    // Several OCR passes are merged into one text, so the number can appear more than once with
+    // different misreads. Prefer a copy whose check digit (Luhn) is right; else the first one seen.
+    var chunks = mapped.split(/\r?\n/);
+    chunks.push(mapped);
+    var first = "", good = "";
+    for (var c = 0; c < chunks.length && !good; c++) {
+      var digits = chunks[c].replace(/[^\d]/g, "");
+      var re = /784\d{12}/g, m;
+      while ((m = re.exec(digits))) {
+        if (!first) first = m[0];
+        if (eidNumberLuhn(m[0])) { good = m[0]; break; }
+        re.lastIndex = m.index + 1;
+      }
+    }
+    var d = good || first;
+    if (!d) return "";
     return d.slice(0, 3) + "-" + d.slice(3, 7) + "-" + d.slice(7, 14) + "-" + d.slice(14);
   }
   function birthYearFromEid(value) {
@@ -1109,8 +1296,12 @@ function mapEidNationality(raw) {
     if (!raw) return empty;
     var lines = raw.split(/\r?\n/).map(function (l) { return normalizeOcrLine(l); }).filter(Boolean);
     var nameRaw = valueAfterEidLabel(lines, "name", isEidNameValue, "name");
+    var nameFromLabel = !!nameRaw;
+    if (nameRaw && eidNameLooksLikeCardText(isolateEnglishPhrase(nameRaw))) { nameRaw = ""; nameFromLabel = false; }
     if (!nameRaw) nameRaw = guessEidName(lines);
     if (nameRaw) nameRaw = isolateEnglishPhrase(nameRaw);
+    // Card headings ("Federal Authority…", "ID Number") are not names; leave the box empty instead.
+    if (nameRaw && eidNameLooksLikeCardText(nameRaw)) { nameRaw = ""; nameFromLabel = false; }
     var natRaw = valueAfterEidLabel(lines, "nationality", isEidNationalityValue, "nationality");
     if (!natRaw || !fuzzyNationalityRaw(natRaw)) {
       for (var i = 0; i < lines.length; i++) {
@@ -1144,8 +1335,12 @@ function mapEidNationality(raw) {
       nationalityOther: nat.nationalityOther,
       gender: gender,
       dob: dob,
-      age: age
+      age: age,
+      nameFromLabel: nameFromLabel && !!split.name
     };
+  }
+  function eidNameLooksLikeCardText(v) {
+    return /\b(FEDERAL|AUTHORITY|IDENTITY|IDENTIT\w*|NUMBER|EMIRATES|CARD|RESIDENT|CITIZENSHIP|CUSTOMS|PORT|SECURITY|UNITED|NATIONALITY|SIGNATURE|DATE|BIRTH|EXPIRY|ISSUING|ID|MIRATES)\b/i.test(String(v || ""));
   }
   function formatNowTime() {
     const d = new Date();
@@ -1837,6 +2032,7 @@ function mapEidNationality(raw) {
     clearAttachments();
     showShareNote("");
     clearAllFieldChecks();
+    if (typeof resetIdReadSession === "function") resetIdReadSession();
     if (typeof updateIdFieldHint === "function") updateIdFieldHint({ hint: "" });
     renderExtraVitals();
     refresh();
@@ -1978,9 +2174,12 @@ function mapEidNationality(raw) {
       unread.push("Date of birth");
       markFieldCheck("dateOfBirth", true);
     }
-    take("Country of birth", "countryOfBirth", "countryOfBirth", parsed.countryOfBirth, { optional: parsed.cardKind !== "sa-front" });
+    take("Country of birth", "countryOfBirth", "countryOfBirth", parsed.countryOfBirth, { optional: parsed.cardKind !== "sa-front" && !parsed.highlightMissingCountries });
     var fromCountry = inferCountryFrom(parsed);
-    take("Country (from)", "countryFrom", "countryFrom", fromCountry, { optional: true });
+    take("Country (from)", "countryFrom", "countryFrom", fromCountry, { optional: !parsed.highlightMissingCountries });
+    if (parsed.unsure && parsed.unsure.length) {
+      parsed.unsure.forEach(function (id) { markFieldCheck(id, true); });
+    }
     return { filledNames: filledNames, skipped: skipped, unread: unread };
   }
   function applyParsedToEmptyFields(parsed) {
@@ -1995,9 +2194,9 @@ function mapEidNationality(raw) {
   var TESS_WORKER_PATH = "https://cdn.jsdelivr.net/npm/tesseract.js@" + TESS_JS_VERSION + "/dist/worker.min.js";
   var TESS_CORE_PATH = "https://cdn.jsdelivr.net/npm/tesseract.js-core@" + TESS_CORE_VERSION + "/tesseract-core.wasm.js";
   var TESS_LANG_PATH = "https://tessdata.projectnaptha.com/4.0.0_fast";
-  var EID_OCR_MIN_SIDE = 1800;
-  var EID_OCR_MAX_SIDE = 2400;
-  var EID_OCR_TARGET_SIDE = 2000;
+  var EID_OCR_MIN_SIDE = 1400;
+  var EID_OCR_MAX_SIDE = 1800;
+  var EID_OCR_TARGET_SIDE = 1600;
   var EID_OCR_WORKER_MS = 60000;
   var EID_OCR_RECOGNIZE_MS = 60000;
   var PDFJS_VERSION = "3.11.174";
@@ -2081,9 +2280,16 @@ function mapEidNationality(raw) {
     });
   }
 
+  var tessLibLoading = null;
   function loadTesseractLibrary(onStatus) {
     if (window.Tesseract) return Promise.resolve(window.Tesseract);
     if (onStatus) onStatus("Loading reader...");
+    // One download at a time (the background warm-up and a read can both ask for it).
+    if (tessLibLoading) return tessLibLoading;
+    tessLibLoading = loadTesseractLibraryNow().then(function (T) { tessLibLoading = null; return T; }, function (err) { tessLibLoading = null; throw err; });
+    return tessLibLoading;
+  }
+  function loadTesseractLibraryNow() {
     var chain = Promise.reject(new Error("start"));
     for (var i = 0; i < TESS_SCRIPT_URLS.length; i++) {
       (function (src) {
@@ -2105,7 +2311,7 @@ function mapEidNationality(raw) {
       corePath: TESS_CORE_PATH,
       langPath: TESS_LANG_PATH,
       workerBlobURL: true,
-      cacheMethod: "none",
+      cacheMethod: "write",
       logger: function (m) {
         if (!onStatus || !m || !m.status) return;
         var status = String(m.status);
@@ -2241,6 +2447,7 @@ function mapEidNationality(raw) {
   }
 
   async function bitmapFromFile(file) {
+    if (file && typeof file.getContext === "function" && file.width && file.height) return file;
     var bytes = null;
     try { bytes = await readFileBytes(file); } catch (e) { bytes = null; }
     var size = bytes ? (jpegSizeAndOrientation(bytes) || pngSize(bytes)) : null;
@@ -2436,7 +2643,7 @@ function mapEidNationality(raw) {
     var longSide = Math.max(sw, sh);
     var scale = 1;
     if (longSide < EID_OCR_MIN_SIDE) scale = EID_OCR_TARGET_SIDE / longSide;
-    else if (longSide > EID_OCR_MAX_SIDE) scale = 2200 / longSide;
+    else if (longSide > EID_OCR_MAX_SIDE) scale = EID_OCR_TARGET_SIDE / longSide;
     var dw = Math.max(1, Math.round(sw * scale));
     var dh = Math.max(1, Math.round(sh * scale));
     var angle = ((rotation || 0) % 360 + 360) % 360;
@@ -2520,6 +2727,19 @@ function mapEidNationality(raw) {
     return lines.join("\n");
   }
 
+  function simpleOcrLines(result) {
+    var data = result && result.data;
+    if (!data || !data.lines || !data.lines.length) return null;
+    var out = [];
+    for (var i = 0; i < data.lines.length; i++) {
+      var l = data.lines[i];
+      var words = [];
+      for (var j = 0; l.words && j < l.words.length; j++) words.push({ text: l.words[j].text, bbox: l.words[j].bbox });
+      out.push({ text: String(l.text || "").replace(/\s+$/, ""), bbox: l.bbox, words: words });
+    }
+    return out;
+  }
+
   async function recognizeCanvasPsm(worker, canvas, psm) {
     if (worker.setParameters) {
       await worker.setParameters({ tessedit_pageseg_mode: String(psm) });
@@ -2527,15 +2747,15 @@ function mapEidNationality(raw) {
     var result = await withTimeout(
       worker.recognize(canvas),
       EID_OCR_RECOGNIZE_MS,
-      "Reading is taking too long. Try a clearer, closer photo of the card, then tap Read card again."
+      "Reading is taking too long. Try a clearer, closer photo of the card, then tap Read ID again."
     );
     var text = result && result.data ? (result.data.text || "") : "";
     var confidence = result && result.data ? Number(result.data.confidence) || 0 : 0;
-    return { text: text, confidence: confidence, psm: psm };
+    return { text: text, confidence: confidence, psm: psm, lines: simpleOcrLines(result) };
   }
 
 
-  var FRONT_ORIENT_WORDS = ["SURNAME", "NAMES", "NATIONALITY", "IDENTITY", "REPUBLIC", "UNITED ARAB EMIRATES", "SOUTH AFRICA", "DATE OF BIRTH", "IDENTITY NUMBER", "CITIZEN", "PASSPORT", "CARD NUMBER"];
+  var FRONT_ORIENT_WORDS = ["DOB", "SURNAME", "NAMES", "NATIONALITY", "IDENTITY", "REPUBLIC", "UNITED ARAB EMIRATES", "SOUTH AFRICA", "DATE OF BIRTH", "IDENTITY NUMBER", "CITIZEN", "PASSPORT", "CARD NUMBER", "KINGDOM", "REPUBLIQUE", "APELLIDOS", "COGNOME", "NACIMIENTO", "NAISSANCE", "GEBURT", "NASCITA", "KIMLIK", "NAMA", "PROVINSI"];
   var FRONT_ORIENT_MAX_SIDE = 1000;
 
   function downscaleCanvasTo(src, maxSide) {
@@ -2638,37 +2858,48 @@ function mapEidNationality(raw) {
     if (parsed && parsed.surname) score += 40;
     if (parsed && parsed.name && parsed.surname) score += 20;
     if (parsed && parsed.luhnOk) score += 15;
+    if (parsed && parsed.nameFromLabel) score += 30;
     return score;
   }
 
-  async function recognizePhotoBest(worker, file, onStatus, index, total) {
-    var label = "photo " + (index + 1) + " of " + total;
-    var orient = await pickFrontOrientation(worker, file, onStatus, index, total);
-    var angle = orient && isFinite(orient.angle) ? orient.angle : 0;
-    if (onStatus) onStatus("Reading " + label + "…");
-    var modes = ["contrast", "sharpen", "threshold"];
-    var psms = [6, 4, 11];
-    var allParts = [];
-    var m, p, canvas, rec, left, lp;
-    var leftModes = ["contrast", "sharpen"];
-    var leftPsms = [6, 4];
-    for (m = 0; m < modes.length; m++) {
-      canvas = await prepareEidImage(file, angle, modes[m]);
-      for (p = 0; p < psms.length; p++) {
-        rec = await recognizeCanvasPsm(worker, canvas, psms[p]);
-        allParts.push(rec);
-      }
-      if (modes[m] === "contrast" || modes[m] === "sharpen") {
-        left = cropFrontLeftColumn(canvas);
-        if (left && left !== canvas) {
-          if (onStatus) onStatus("Reading the name area on " + label + "…");
-          for (lp = 0; lp < leftPsms.length; lp++) {
-            rec = await recognizeCanvasPsm(worker, left, leftPsms[lp]);
-            allParts.push(rec);
-          }
-        }
-      }
+  // True once a card-front read has everything the form needs, so no more reading passes are run.
+  function frontReadComplete(p, passes) {
+    if (!p) return false;
+    if (p.cardKind === "eid-front") {
+      // The ID number's check digit must pass; after a few passes accept it anyway (it gets highlighted).
+      var eidOk = p.eid && (eidNumberLuhn(String(p.eid).replace(/\D/g, "")) || (passes || 0) >= 4);
+      return !!(eidOk && p.nameFromLabel && (p.nameVotes || 0) >= 2 && p.name && p.surname && p.dob && p.gender && p.nationality);
     }
+    if (p.cardKind === "sa-front") {
+      return !!((p.idNumber || p.eid) && p.luhnOk !== false && p.surname && p.name && p.dob);
+    }
+    if (p.cardKind === "saudi-front") {
+      // Small print on these cards is often misread, so each value must have been read the same way twice.
+      var v = p.votes || {};
+      return !!(p.eid && p.surname && p.name && p.dob && v.id >= 3 && v.name >= 2 && v.dob >= 2);
+    }
+    return !!(p.name && p.surname && p.dob && p.gender && (p.eid || p.docNumber) && (p.nationality || p.nationalityOther));
+  }
+
+  var FRONT_PASS_BUDGET_MS = 20000;
+  // Reading passes for a card front, best first. Reading stops as soon as the card is fully read.
+  var FRONT_PASSES = [
+    { mode: "contrast", psm: 6 },
+    { mode: "contrast", psm: 6, left: true },
+    { mode: "sharpen", psm: 6 },
+    { mode: "threshold", psm: 6 },
+    { mode: "contrast", psm: 4 },
+    { mode: "sharpen", psm: 6, left: true },
+    { mode: "sharpen", psm: 4 },
+    { mode: "threshold", psm: 4 },
+    { mode: "contrast", psm: 11 },
+    { mode: "contrast", psm: 4, left: true },
+    { mode: "sharpen", psm: 11 },
+    { mode: "sharpen", psm: 4, left: true },
+    { mode: "threshold", psm: 11 }
+  ];
+
+  function pickFrontParse(allParts, orient) {
     var merged = mergeOcrTexts(allParts);
     if (orient && orient.text) merged = mergeOcrTexts([{ text: orient.text }, { text: merged }]);
     var confSum = 0;
@@ -2678,17 +2909,90 @@ function mapEidNationality(raw) {
     var parsed = parseCardFrontText(merged);
     var score = scoreParsedCardCandidate(parsed, confidence);
     var candidates = allParts.slice();
-    if (orient && orient.text) candidates.push({ text: orient.text, confidence: orient.confidence || 0 });
-    candidates.push({ text: merged, confidence: confidence });
+    if (orient && orient.text) candidates.push(orient);
+    // Each pass is parsed once and remembered; reading stops after every pass, so this keeps it quick.
+    function parseOf(cand) {
+      if (!cand._parsed) cand._parsed = parseCardFrontText((cand && cand.text) || "", undefined, cand && cand.lines);
+      return cand._parsed;
+    }
     for (c = 0; c < candidates.length; c++) {
-      var one = parseCardFrontText((candidates[c] && candidates[c].text) || "");
+      var one = parseOf(candidates[c]);
       var oneScore = scoreParsedCardCandidate(one, (candidates[c] && candidates[c].confidence) || 0);
       if (oneScore > score) {
-        parsed = one;
+        parsed = Object.assign({}, one);
         score = oneScore;
       }
     }
-    return { text: merged, confidence: confidence, angle: angle, parsed: parsed, score: score };
+    // The best-scoring pass can still have a misread ID number; use a check-digit-valid copy from any pass.
+    if (parsed && parsed.cardKind === "eid-front") {
+      var goodEid = parseEidNumber(merged);
+      if (goodEid && eidNumberLuhn(goodEid.replace(/\D/g, "")) && !(parsed.eid && eidNumberLuhn(String(parsed.eid).replace(/\D/g, "")))) parsed.eid = goodEid;
+      // Each pass votes for the name and nationality it read; a value two passes agree on wins,
+      // and boxes the best pass missed (e.g. "Sex: M" read only in another pass) are filled from the others.
+      var others = [], nameVotes = {}, natVotes = {}, o2;
+      for (c = 0; c < candidates.length; c++) {
+        o2 = parseOf(candidates[c]);
+        if (!o2 || o2.cardKind !== "eid-front") continue;
+        others.push(o2);
+        if (o2.nameFromLabel && o2.name) { var nk = o2.name + "|" + o2.surname; nameVotes[nk] = (nameVotes[nk] || 0) + 1; }
+        if (o2.nationality) { var tk = o2.nationality + "|" + (o2.nationalityOther || ""); natVotes[tk] = (natVotes[tk] || 0) + 1; }
+      }
+      function topVote(votes) {
+        var bestK = "", bestN = 0;
+        Object.keys(votes).forEach(function (k) { if (votes[k] > bestN) { bestK = k; bestN = votes[k]; } });
+        return { key: bestK, n: bestN };
+      }
+      var tn = topVote(nameVotes), curName = parsed.name + "|" + parsed.surname;
+      if (tn.n >= 2 && (nameVotes[curName] || 0) < tn.n) {
+        parsed.name = tn.key.split("|")[0]; parsed.surname = tn.key.split("|")[1]; parsed.nameFromLabel = true;
+      }
+      parsed.nameVotes = nameVotes[parsed.name + "|" + parsed.surname] || 0;
+      var tt = topVote(natVotes), curNat = parsed.nationality + "|" + (parsed.nationalityOther || "");
+      if (tt.n >= 2 && (natVotes[curNat] || 0) < tt.n) {
+        parsed.nationality = tt.key.split("|")[0]; parsed.nationalityOther = tt.key.split("|")[1];
+      }
+      ["gender", "dob", "nationality"].forEach(function (k) {
+        if (parsed[k]) return;
+        for (var j = 0; j < others.length; j++) {
+          if (!others[j][k]) continue;
+          parsed[k] = others[j][k];
+          if (k === "nationality") parsed.nationalityOther = others[j].nationalityOther || "";
+          if (k === "dob" && others[j].age) parsed.age = others[j].age;
+          break;
+        }
+      });
+    }
+    return { text: merged, confidence: confidence, parsed: parsed, score: score };
+  }
+
+  async function recognizePhotoBest(worker, file, onStatus, index, total) {
+    var label = "photo " + (index + 1) + " of " + total;
+    var t0 = Date.now();
+    var orient = await pickFrontOrientation(worker, file, onStatus, index, total);
+    var angle = orient && isFinite(orient.angle) ? orient.angle : 0;
+    var allParts = [];
+    var out = pickFrontParse(allParts, orient);
+    var prepared = {};
+    var i, pass, canvas, rec;
+    for (i = 0; i < FRONT_PASSES.length && !frontReadComplete(out.parsed, i); i++) {
+      // Past the time budget, stop once the basics are in; the rest can be typed.
+      if (i >= 2 && Date.now() - t0 > FRONT_PASS_BUDGET_MS && countParsedFields(out.parsed) >= 3) break;
+      // Other cards: more passes rarely add anything after six; the Arabic pass (if needed) fills the rest.
+      if (i >= 6 && (!out.parsed || out.parsed.cardKind === "general") && countParsedFields(out.parsed) >= 3) break;
+      pass = FRONT_PASSES[i];
+      if (onStatus) onStatus(pass.left ? ("Reading the name area on " + label + "…") : ("Reading " + label + "…"));
+      if (!prepared[pass.mode]) prepared[pass.mode] = await prepareEidImage(file, angle, pass.mode);
+      canvas = prepared[pass.mode];
+      if (pass.left) {
+        if (!prepared[pass.mode + "-left"]) prepared[pass.mode + "-left"] = cropFrontLeftColumn(canvas);
+        canvas = prepared[pass.mode + "-left"];
+        if (!canvas || canvas === prepared[pass.mode]) continue;
+      }
+      rec = await recognizeCanvasPsm(worker, canvas, pass.psm);
+      allParts.push(rec);
+      out = pickFrontParse(allParts, orient);
+    }
+    return { text: out.text, confidence: out.confidence, angle: angle, parsed: out.parsed, score: out.score, passes: allParts.length };
   }
 
   function unreadNameStatus(parsed) {
@@ -2783,21 +3087,121 @@ function mapEidNationality(raw) {
     if (!parsed) return false;
     return !!(parsed.eid || parsed.idNumber || parsed.name || parsed.surname || parsed.dob || parsed.gender || parsed.nationality || (countParsedFields(parsed) >= 2));
   }
-  function parseCardFrontText(text, now) {
+  function looksLikeEidFront(text) {
+    var s = String(text || "");
+    if (/UNITED\s+ARAB\s+EMIRATES|RESIDENT\s+IDENTITY|FEDERAL\s+AUTHORITY\s+FOR\s+IDENTITY|EMIRATES\s+ID|IDENTITY\s*(?:&|AND)\s*CITIZENSHIP/i.test(s)) return true;
+    if (/\u0627\u0644\u0625\u0645\u0627\u0631\u0627\u062A|\u0627\u0644\u0627\u0645\u0627\u0631\u0627\u062A/.test(s)) return true;
+    return !!parseEidNumber(s);
+  }
+  function parseCardFrontText(text, now, lines) {
     var raw = String(text || "").trim();
     if (!raw) return parseEidText(raw, now);
+    var routed = parseCardFrontKnown(raw, now);
+    if (routed) return routed;
+    if (typeof GeneralCard !== "undefined" && GeneralCard.parse) {
+      var general = GeneralCard.parse(lines && lines.length ? { text: raw, lines: lines } : raw, { now: now });
+      return general;
+    }
+    var eidFallback = parseEidText(raw, now);
+    eidFallback.cardKind = "eid-front";
+    return eidFallback;
+  }
+  // Saudi national ID front: mostly Arabic, with "No: 1xxxxxxxxx", "DOB:", "DOE:" and (newer cards)
+  // the English name as "SURNAME, GIVEN NAMES". Several reading passes are merged, so each value is
+  // chosen by how often it was read.
+  function saudiVote(votes, key) { if (key) votes[key] = (votes[key] || 0) + 1; }
+  function saudiTop(votes) {
+    var best = "", n = 0;
+    Object.keys(votes).forEach(function (k) { if (votes[k] > n) { best = k; n = votes[k]; } });
+    return best;
+  }
+  function looksLikeSaudiFront(raw) {
+    var t = String(raw || "");
+    var hasNo = /\bN[o0]\s*[:.]?\s*[12]\d{9}\b/i.test(t);
+    var hasDates = /\bDO[BRE8]\b\s*[:.]?\s*\d/i.test(t);
+    var saudiWords = /SAUDI|السعودية|الهوية الوطنية/i.test(t);
+    return (hasNo && (hasDates || saudiWords)) || (saudiWords && /\b[12]\d{9}\b/.test(t) && !/\b784\d{12}\b/.test(t.replace(/[\s-]/g, "")));
+  }
+  function parseSaudiFrontText(raw, now) {
+    now = now || new Date();
+    var lines = String(raw || "").split(/\r?\n/);
+    var idVotes = {}, nameVotes = {}, dobVotes = {};
+    lines.forEach(function (line) {
+      var m, re = /(?:^|[^0-9])([12]\d{9})(?![0-9])/g;
+      var labelled = /\bN[o0]\s*[:.]?\s*[12]\d{9}/i.test(line);
+      while ((m = re.exec(line))) { saudiVote(idVotes, m[1]); if (labelled) saudiVote(idVotes, m[1]); }
+      var nm = line.match(/([A-Z][A-Z'\-]{1,}(?:\s+[A-Z][A-Z'\-]{1,})*)\s*,\s*([A-Z][A-Z'\-]{1,}(?:\s+[A-Z][A-Z'\-]{1,}){0,4})/);
+      if (nm) saudiVote(nameVotes, nm[1].trim() + "|" + nm[2].trim());
+      var dm = line.match(/\b(?:DO[BR8]|D0B|BIRTH)\b\s*[:.]?\s*([0-9OoIl][0-9OoIl\/.\- ]{6,11})/i);
+      if (dm) {
+        var d = dm[1].replace(/[Oo]/g, "0").replace(/[Il]/g, "1").replace(/[^0-9]/g, "");
+        if (d.length === 8) {
+          var dd = +d.slice(0, 2), mo = +d.slice(2, 4), yy = +d.slice(4);
+          if (dd >= 1 && dd <= 31 && mo >= 1 && mo <= 12 && yy >= 1900 && yy <= now.getFullYear()) saudiVote(dobVotes, d.slice(0, 2) + "/" + d.slice(2, 4) + "/" + d.slice(4));
+        }
+      }
+    });
+    var id = saudiTop(idVotes);
+    var nameKey = saudiTop(nameVotes);
+    var dob = saudiTop(dobVotes);
+    var surname = nameKey ? nameKey.split("|")[0] : "";
+    var given = nameKey ? nameKey.split("|")[1] : "";
+    var citizen = /^1/.test(id);
+    var out = {
+      cardKind: "saudi-front",
+      name: given, surname: surname,
+      eid: id, docNumber: id, idNumber: id,
+      gender: "",
+      dob: dob,
+      age: dob ? ageFromParsedDob(dob, now) : "",
+      nationality: citizen ? "Saudi Arabian" : "",
+      nationalityOther: "",
+      countryFrom: citizen ? "Saudi Arabia" : "",
+      countryOfBirth: "",
+      unsure: [],
+      notes: [],
+      votes: { id: idVotes[id] || 0, name: nameVotes[nameKey] || 0, dob: dobVotes[dob] || 0 }
+    };
+    if (!citizen && id) out.notes.push("this looks like a Saudi resident (Iqama) number, so nationality was left for you to fill");
+    return out;
+  }
+
+  // Emirates ID front or SA smart ID front, using their own parsers. Returns null for other cards.
+  function parseCardFrontKnown(raw, now) {
+    if (looksLikeEidFront(raw)) {
+      var eidParsed = parseEidText(raw, now);
+      eidParsed.cardKind = "eid-front";
+      return eidParsed;
+    }
+    if (looksLikeSaudiFront(raw)) {
+      var saudi = parseSaudiFrontText(raw, now);
+      if (saudi.eid || saudi.surname) return saudi;
+    }
     if (typeof SaId !== "undefined" && SaId.parseSaIdFrontText) {
       var useSa = SaId.looksLikeSaIdFront && SaId.looksLikeSaIdFront(raw);
-      if (!useSa && SaId.parseSaIdText) {
-        var idOnly = SaId.parseSaIdText(raw, now);
-        if (idOnly && idOnly.ok && !/^784/.test(idOnly.idNumber || "")) useSa = true;
+      var idOnly = SaId.parseSaIdText ? SaId.parseSaIdText(raw, now) : null;
+      var saIdOk = !!(idOnly && idOnly.ok && !/^784/.test(idOnly.idNumber || ""));
+      if (saIdOk) {
+        // The 13 digits must stand on their own (not glued together from other numbers on the card).
+        var saDigits = String(idOnly.idNumber || "").replace(/\D/g, "");
+        saIdOk = saDigits.length === 13 && new RegExp("(?:^|[^0-9])" + saDigits.split("").join("[ ]?") + "(?![0-9])").test(raw);
       }
+      if (useSa && !saIdOk && !/SOUTH\s+AFRICA|\bRSA\b|NATIONAL\s+IDENTITY\s+CARD|IDENTITY\s+NUMBER|\bCITIZEN\b/i.test(raw)) useSa = false;
+      if (useSa && typeof GeneralCard !== "undefined" && GeneralCard.findIssuer) {
+        // Other countries' cards also say "Surname" and "Date of birth"; don't treat them as SA.
+        var issuerIso = GeneralCard.findIssuer(raw.split(/\r?\n/).map(function (t) { return { text: t }; }));
+        if (issuerIso && issuerIso !== "ZAF") { useSa = false; saIdOk = false; }
+      }
+      if (!useSa && saIdOk) useSa = true;
       if (useSa) {
         var saFront = SaId.parseSaIdFrontText(raw, now);
-        if (saFront && (saFront.eid || saFront.idNumber || saFront.surname || saFront.name || saFront.dob)) return saFront;
+        if (saFront && (saFront.eid || saFront.idNumber || saFront.surname || saFront.name || saFront.dob)) {
+          if (!saFront.cardKind) saFront.cardKind = "sa-front";
+          return saFront;
+        }
       }
     }
-    return parseEidText(raw, now);
+    return null;
   }
   function applyCardText(raw, applyParsed) {
     var text = String(raw || "").trim();
@@ -4762,6 +5166,954 @@ function mapEidNationality(raw) {
   root.IdField = api;
 })(typeof globalThis !== "undefined" ? globalThis : this);
 
+/* General card-front reader: multilingual labels (EN FR ES PT DE IT NL TR ID AR). Works in the browser and in Node. */
+(function (root) {
+  "use strict";
+
+  // ---------- text normalising ----------
+  function toLatinDigits(s) {
+    return String(s || "").replace(/[\u0660-\u0669]/g, function (c) { return String(c.charCodeAt(0) - 0x0660); })
+      .replace(/[\u06F0-\u06F9]/g, function (c) { return String(c.charCodeAt(0) - 0x06F0); });
+  }
+  function stripAccents(s) {
+    s = String(s || "");
+    try { s = s.normalize("NFD"); } catch (e) {}
+    return s.replace(/[\u0300-\u036f]/g, "");
+  }
+  function normArabic(s) {
+    return String(s || "").replace(/[\u064B-\u0655\u0670\u0640]/g, "")
+      .replace(/[\u0623\u0625\u0622\u0671]/g, "\u0627")
+      .replace(/\u0649/g, "\u064A").replace(/\u0629/g, "\u0647");
+  }
+  function normText(s) {
+    s = toLatinDigits(String(s || ""));
+    s = s.replace(/\u0131/g, "i").replace(/\u00DF/g, "ss").replace(/\u0130/g, "I");
+    s = normArabic(s);
+    s = stripAccents(s).toLowerCase();
+    return normArabic(s);
+  }
+  // Key used for matching labels: no punctuation, single spaces.
+  function normKey(s) {
+    return normText(s).replace(/[.,;:()\[\]'\u2019`"*_|\u00B7\u00B0\u00BA#]/g, "").replace(/\s+/g, " ").trim();
+  }
+  var ARABIC_RE = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
+  var LATIN_RE = /[A-Za-z\u00C0-\u024F]/;
+  function hasArabic(s) { return ARABIC_RE.test(String(s || "")); }
+  function hasLatin(s) { return LATIN_RE.test(String(s || "")); }
+
+  function lev(a, b, max) {
+    if (a === b) return 0;
+    var la = a.length, lb = b.length;
+    if (Math.abs(la - lb) > max) return max + 1;
+    var prev = [], cur = [], i, j;
+    for (j = 0; j <= lb; j++) prev[j] = j;
+    for (i = 1; i <= la; i++) {
+      cur = [i];
+      var best = i;
+      for (j = 1; j <= lb; j++) {
+        var c = a.charCodeAt(i - 1) === b.charCodeAt(j - 1) ? 0 : 1;
+        cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + c);
+        if (cur[j] < best) best = cur[j];
+      }
+      if (best > max) return max + 1;
+      prev = cur;
+    }
+    return prev[lb];
+  }
+
+  // ---------- label dictionary ----------
+  // field: surname | given | full | middle | sex | dob | nationality | pob | pobdob | idnum ; rank only for idnum.
+  var LABEL_LIST = {
+    surname: [
+      "surname", "surnames", "last name", "family name", "nom", "nom de famille", "nom d'usage",
+      "apellido", "apellidos", "primer apellido", "1er apellido", "segundo apellido", "2o apellido",
+      "apelido", "apelidos", "sobrenome", "familienname", "nachname", "cognome", "achternaam", "naam",
+      "soyadi", "soyad", "soyadı",
+      "اسم العائلة", "العائلة", "اللقب", "الكنية", "اسم العائله", "الشهرة", "الشهره"
+    ],
+    given: [
+      "given name", "given names", "given name(s)", "first name", "first names", "forename", "forenames", "names",
+      "other names", "prenom", "prenoms", "prénom", "prénoms", "nombre", "nombres", "nome proprio", "nomes proprios",
+      "nome", "nomes", "prenome", "vorname", "vornamen", "nomi", "voornaam", "voornamen", "adi", "ad", "adı",
+      "الاسم الاول", "الاسم الأول", "الإسم الأول"
+    ],
+    middle: ["middle name", "middle names", "segundo nombre"],
+    full: [
+      "name", "full name", "name surname", "name and surname", "names and surnames", "nama", "nama lengkap",
+      "ad soyad", "adi soyadi", "nombre completo", "nombre y apellidos", "nom complet", "nom et prenoms", "nome completo",
+      "vollstandiger name", "volledige naam", "nome e cognome", "nombres y apellidos",
+      "الاسم", "الإسم", "اسم", "الاسم الكامل", "الاسم بالكامل", "الاسم الثلاثي", "الاسم الرباعي"
+    ],
+    sex: [
+      "sex", "gender", "sexe", "sexo", "geschlecht", "sesso", "geslacht", "cinsiyet", "cinsiyeti", "cinsiyet i",
+      "jenis kelamin", "kelamin", "الجنس", "النوع"
+    ],
+    dob: [
+      "date of birth", "birth date", "birthdate", "dob", "d o b", "born", "born on", "date de naissance", "ne le", "nee le", "ne(e) le",
+      "fecha de nacimiento", "fecha nacimiento", "f nacimiento", "nacimiento", "data de nascimento", "data nascimento", "nascimento",
+      "geburtsdatum", "geburtstag", "geboren am", "data di nascita", "nato il", "nata il", "geboortedatum",
+      "dogum tarihi", "doğum tarihi", "tanggal lahir", "tgl lahir", "tgl. lahir", "lahir",
+      "تاريخ الميلاد", "تاريخ الولادة", "الميلاد", "تاريخ الميلاد:"
+    ],
+    nationality: [
+      "nationality", "citizenship", "nationalite", "nacionalidad", "nacionalidade", "staatsangehorigkeit",
+      "cittadinanza", "nazionalita", "nationaliteit", "uyrugu", "uyruk", "uyruğu", "kewarganegaraan", "الجنسية", "الجنسيه"
+    ],
+    pob: [
+      "place of birth", "country of birth", "birth place", "birthplace", "place of origin", "lieu de naissance", "pays de naissance",
+      "lugar de nacimiento", "pais de nacimiento", "local de nascimento", "naturalidade", "pais de nascimento", "geburtsort",
+      "luogo di nascita", "comune di nascita", "geboorteplaats", "dogum yeri", "doğum yeri", "tempat lahir", "tempat",
+      "مكان الميلاد", "محل الميلاد", "مكان الولادة", "بلد الميلاد", "محل الولادة"
+    ],
+    pobdob: [
+      "place and date of birth", "date and place of birth", "lieu et date de naissance", "date et lieu de naissance",
+      "lugar y fecha de nacimiento", "fecha y lugar de nacimiento", "luogo e data di nascita", "data e luogo di nascita",
+      "local e data de nascimento", "data e local de nascimento", "tempat tgl lahir", "tempat tanggal lahir", "ttl",
+      "geburtsort und datum", "dogum yeri ve tarihi", "مكان وتاريخ الميلاد", "تاريخ ومكان الميلاد"
+    ],
+    idnum: [
+      // rank 3: personal / national number, rank 2: document / card number, rank 1: generic
+      ["id no", 2], ["id number", 2], ["id num", 2], ["id #", 2], ["identity number", 3], ["identity no", 3],
+      ["identification number", 3], ["identification no", 3], ["national id", 3], ["national id no", 3], ["national id number", 3],
+      ["nin", 3], ["personal no", 3], ["personal number", 3], ["personal id", 3], ["document no", 2], ["document number", 2],
+      ["doc no", 2], ["card no", 2], ["card number", 2], ["passport no", 2], ["passport number", 2], ["crn", 3], ["pcn", 3],
+      ["phl id no", 3], ["philsys card number", 3], ["aadhaar no", 3], ["aadhaar number", 3], ["your aadhaar no", 3],
+      ["permanent account number", 2], ["epic no", 2], ["voter id no", 2],
+      ["numero du document", 2], ["n du document", 2], ["no du document", 2], ["numero de document", 2], ["carte nationale d'identite n", 2],
+      ["numero de documento", 2], ["num documento", 2], ["n documento", 2], ["dni num", 3], ["dni n", 3], ["num dni", 3], ["dni", 3],
+      ["numero do documento", 2], ["n do documento", 2], ["n de identificacao civil", 3], ["numero de identificacao civil", 3], ["n identificacao civil", 3],
+      ["documento n", 2], ["ausweisnummer", 2], ["dokumentennummer", 2], ["dokumentnummer", 2], ["personalausweisnummer", 2],
+      ["numero documento", 2], ["n documento", 2], ["numero carta", 2], ["carta n", 2], ["documentnummer", 2], ["persoonsnummer", 3], ["bsn", 3],
+      ["tc kimlik no", 3], ["t c kimlik no", 3], ["kimlik no", 3], ["tr identity no", 3], ["seri no", 2], ["belge no", 2],
+      ["nik", 3], ["no kk", 1],
+      ["رقم الهوية", 3], ["رقم الهويه", 3], ["الرقم الوطني", 3], ["الرقم القومي", 3], ["رقم البطاقة", 2], ["رقم البطاقه", 2],
+      ["الرقم الشخصي", 3], ["رقم الوثيقة", 2], ["رقم الوثيقه", 2], ["رقم الجواز", 2], ["رقم جواز السفر", 2], ["رقم السجل المدني", 3], ["رقم الاقامة", 2]
+    ]
+  };
+
+  var LABELS = [];      // [{key, field, rank, words}]
+  var LABEL_BY_KEY = {};
+  (function buildLabels() {
+    Object.keys(LABEL_LIST).forEach(function (field) {
+      LABEL_LIST[field].forEach(function (entry) {
+        var text = typeof entry === "string" ? entry : entry[0];
+        var rank = typeof entry === "string" ? 0 : entry[1];
+        var key = normKey(text.replace(/#/g, "no"));
+        if (!key || LABEL_BY_KEY[key]) return;
+        var item = { key: key, field: field, rank: rank, words: key.split(" ").length, arabic: hasArabic(key) };
+        LABELS.push(item);
+        LABEL_BY_KEY[key] = item;
+      });
+    });
+  })();
+
+  function fuzzyMax(len) { return len <= 4 ? 0 : (len <= 8 ? 1 : 2); }
+
+  function matchLabelKey(key, words) {
+    if (!key) return null;
+    var exact = LABEL_BY_KEY[key];
+    if (exact) return exact;
+    var max = fuzzyMax(key.replace(/ /g, "").length);
+    if (!max) return null;
+    var best = null, bestD = max + 1;
+    for (var i = 0; i < LABELS.length; i++) {
+      var L = LABELS[i];
+      if (L.words !== words || L.arabic) continue;
+      if (fuzzyMax(L.key.replace(/ /g, "").length) < 1) continue;
+      var d = lev(key, L.key, max);
+      if (d < bestD) { bestD = d; best = L; }
+    }
+    return bestD <= max ? best : null;
+  }
+
+  // ---------- tokenising ----------
+  var SEP_RE = /^[\/:|\-\u2013\u2014=]+$/;
+  function splitSeparators(text) {
+    var s = toLatinDigits(String(text || ""));
+    var out = "";
+    for (var i = 0; i < s.length; i++) {
+      var ch = s[i];
+      if (ch === "/" || ch === ":" || ch === "|" || ch === "\u060C") {
+        var a = s[i - 1] || "", b = s[i + 1] || "";
+        if (ch !== "|" && ch !== "\u060C" && /\d/.test(a) && /\d/.test(b)) { out += ch; continue; }
+        out += " " + (ch === "\u060C" ? "," : ch) + " ";
+      } else out += ch;
+    }
+    return out;
+  }
+  function tokenizeLine(line) {
+    var tokens = [];
+    function pushTok(p, bbox) {
+      var m = /^([A-Za-z]{2,4})-(\d[\dA-Za-z\-]*)$/.exec(p);
+      if (m && LABEL_BY_KEY[normKey(m[1])]) { tokens.push({ o: m[1], bbox: bbox }); tokens.push({ o: m[2], bbox: bbox }); return; }
+      tokens.push({ o: p, bbox: bbox });
+    }
+    if (line.words && line.words.length) {
+      line.words.forEach(function (w) {
+        var parts = splitSeparators(w.text).split(/\s+/).filter(Boolean);
+        parts.forEach(function (p) { pushTok(p, w.bbox || null); });
+      });
+    } else {
+      splitSeparators(line.text).split(/\s+/).filter(Boolean).forEach(function (p) { pushTok(p, null); });
+    }
+    tokens.forEach(function (t) {
+      t.sep = SEP_RE.test(t.o);
+      t.k = t.sep ? "" : normKey(t.o);
+      if (!t.sep && !t.k) t.sep = true; // pure punctuation
+    });
+    return tokens;
+  }
+
+  function toLines(input) {
+    if (input && typeof input === "object" && input.lines && input.lines.length) {
+      return input.lines.map(function (l) {
+        return { text: String(l.text || "").replace(/\s+$/, ""), bbox: l.bbox || null, words: (l.words || []).map(function (w) { return { text: w.text, bbox: w.bbox }; }) };
+      }).filter(function (l) { return l.text.trim(); });
+    }
+    var text = typeof input === "string" ? input : (input && input.text) || "";
+    return String(text).split(/\r?\n/).map(function (t) { return { text: t, bbox: null, words: null }; }).filter(function (l) { return l.text.trim(); });
+  }
+
+  function isUpperWord(s) { return hasLatin(s) && s === s.toUpperCase(); }
+
+  // Find label matches in a token list, then join neighbours into spans.
+  function findSpans(tokens) {
+    var matches = [];
+    var i = 0;
+    while (i < tokens.length) {
+      if (tokens[i].sep) { i++; continue; }
+      var found = null;
+      for (var n = 5; n >= 1 && !found; n--) {
+        var idx = [], j = i;
+        while (j < tokens.length && idx.length < n) {
+          if (!tokens[j].sep) idx.push(j);
+          else if (idx.length && !/^[\-\u2013]$/.test(tokens[j].o)) break; // labels don't span "/" or ":"
+          j++;
+        }
+        if (idx.length !== n) continue;
+        var key = idx.map(function (q) { return tokens[q].k; }).join(" ");
+        var L = matchLabelKey(key, n);
+        if (L) found = { start: i, end: idx[idx.length - 1] + 1, label: L, n: n };
+      }
+      if (found) {
+        matches.push(found);
+        i = found.end;
+      } else i++;
+    }
+    // Accept short all-caps single words only when they really look like a label.
+    matches = matches.filter(function (m, mi) {
+      if (m.n >= 2 || m.label.key.length >= 6 || m.label.arabic) return true;
+      var orig = tokens.slice(m.start, m.end).map(function (t) { return t.o; }).join(" ");
+      if (!isUpperWord(orig)) return true;
+      var next = tokens[m.end];
+      var prev = tokens[m.start - 1];
+      if (!next || next.sep || (prev && prev.sep)) return true;
+      var firstReal = 0;
+      while (firstReal < tokens.length && tokens[firstReal].sep) firstReal++;
+      if (m.start === firstReal) return true;
+      if (matches[mi + 1] && matches[mi + 1].start === m.end) return true;
+      if (matches[mi - 1] && matches[mi - 1].end === m.start) return true;
+      return false;
+    });
+    var spans = [];
+    matches.forEach(function (m) {
+      var last = spans[spans.length - 1];
+      if (last) {
+        var between = tokens.slice(last.end, m.start);
+        var onlySep = between.every(function (t) { return t.sep; });
+        var hasSlash = between.some(function (t) { return t.o === "/"; });
+        var f1 = last.fields, f2 = m.label.field;
+        if (onlySep && (f1.indexOf(f2) !== -1 && (hasSlash || !between.length) || hasSlash && compatible(f1, f2))) {
+          last.end = m.end;
+          if (f1.indexOf(f2) === -1) f1.push(f2);
+          last.rank = Math.max(last.rank, m.label.rank);
+          last.arabic = last.arabic || m.label.arabic;
+          last.keys.push(m.label.key);
+          return;
+        }
+      }
+      spans.push({ start: m.start, end: m.end, fields: [m.label.field], rank: m.label.rank, arabic: m.label.arabic, keys: [m.label.key] });
+    });
+    spans.forEach(function (s) { s.field = resolveField(s.fields); s.bbox = spanBbox(tokens, s.start, s.end); });
+    return spans;
+  }
+  function compatible(fields, f) {
+    var pairs = [["surname", "full"], ["given", "full"], ["pob", "dob"], ["pobdob", "pob"], ["pobdob", "dob"], ["middle", "given"]];
+    for (var i = 0; i < fields.length; i++) {
+      for (var p = 0; p < pairs.length; p++) {
+        if ((pairs[p][0] === fields[i] && pairs[p][1] === f) || (pairs[p][1] === fields[i] && pairs[p][0] === f)) return true;
+      }
+    }
+    return false;
+  }
+  function resolveField(fields) {
+    if (fields.indexOf("pobdob") !== -1 || (fields.indexOf("pob") !== -1 && fields.indexOf("dob") !== -1)) return "pobdob";
+    if (fields.indexOf("surname") !== -1) return "surname";
+    if (fields.indexOf("middle") !== -1) return "middle";
+    if (fields.indexOf("given") !== -1) return "given";
+    return fields[0];
+  }
+  function spanBbox(tokens, a, b) {
+    var x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity, any = false;
+    for (var i = a; i < b; i++) {
+      var bb = tokens[i].bbox;
+      if (!bb) continue;
+      any = true;
+      x0 = Math.min(x0, bb.x0); x1 = Math.max(x1, bb.x1); y0 = Math.min(y0, bb.y0); y1 = Math.max(y1, bb.y1);
+    }
+    return any ? { x0: x0, x1: x1, y0: y0, y1: y1 } : null;
+  }
+
+  // ---------- value parsers ----------
+  var MONTHS = {};
+  (function () {
+    var lists = [
+      ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"],
+      ["janvier", "fevrier", "mars", "avril", "mai", "juin", "juillet", "aout", "septembre", "octobre", "novembre", "decembre"],
+      ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"],
+      ["janeiro", "fevereiro", "marco", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"],
+      ["januar", "februar", "marz", "april", "mai", "juni", "juli", "august", "september", "oktober", "november", "dezember"],
+      ["gennaio", "febbraio", "marzo", "aprile", "maggio", "giugno", "luglio", "agosto", "settembre", "ottobre", "novembre", "dicembre"],
+      ["januari", "februari", "maart", "april", "mei", "juni", "juli", "augustus", "september", "oktober", "november", "december"],
+      ["ocak", "subat", "mart", "nisan", "mayis", "haziran", "temmuz", "agustos", "eylul", "ekim", "kasim", "aralik"],
+      ["januari", "februari", "maret", "april", "mei", "juni", "juli", "agustus", "september", "oktober", "november", "desember"],
+      ["يناير", "فبراير", "مارس", "ابريل", "مايو", "يونيو", "يوليو", "اغسطس", "سبتمبر", "اكتوبر", "نوفمبر", "ديسمبر"],
+      ["كانون الثاني", "شباط", "اذار", "نيسان", "ايار", "حزيران", "تموز", "اب", "ايلول", "تشرين الاول", "تشرين الثاني", "كانون الاول"]
+    ];
+    lists.forEach(function (list) {
+      list.forEach(function (m, i) {
+        var k = normKey(m);
+        if (!MONTHS[k]) MONTHS[k] = i + 1;
+        if (!hasArabic(k) && k.length > 3) {
+          var ab = k.slice(0, 3);
+          if (!MONTHS[ab]) MONTHS[ab] = i + 1;
+          var ab4 = k.slice(0, 4);
+          if (!MONTHS[ab4]) MONTHS[ab4] = i + 1;
+        }
+      });
+    });
+    MONTHS["sept"] = 9; MONTHS["juil"] = 7; MONTHS["fevr"] = 2; MONTHS["janv"] = 1; MONTHS["okt"] = 10; MONTHS["mrt"] = 3; MONTHS["mei"] = 5; MONTHS["des"] = 12; MONTHS["agu"] = 8; MONTHS["dic"] = 12; MONTHS["ene"] = 1; MONTHS["out"] = 10; MONTHS["dez"] = 12; MONTHS["mag"] = 5; MONTHS["giu"] = 6; MONTHS["lug"] = 7; MONTHS["ago"] = 8; MONTHS["set"] = 9;
+  })();
+  function monthFrom(word) {
+    var k = normKey(word).replace(/[^a-z\u0600-\u06ff ]/g, "");
+    if (!k) return 0;
+    if (MONTHS[k]) return MONTHS[k];
+    return 0;
+  }
+  function pad2(n) { return (n < 10 ? "0" : "") + n; }
+  function century(y2, now) {
+    var cur = (now || new Date()).getFullYear();
+    var y = 2000 + y2;
+    if (y > cur) y -= 100;
+    return y;
+  }
+  function validDate(d, m, y) {
+    if (!(m >= 1 && m <= 12 && d >= 1 && d <= 31 && y >= 1890 && y <= 2100)) return false;
+    var dt = new Date(y, m - 1, d);
+    return dt.getMonth() === m - 1 && dt.getDate() === d;
+  }
+  // All dates found in a string, in order. {d,m,y,index,len,out}
+  function findDates(str, now) {
+    var s = toLatinDigits(String(str || ""));
+    var out = [];
+    var used = [];
+    function push(d, m, y, idx, len) {
+      if (!validDate(d, m, y)) return;
+      for (var u = 0; u < used.length; u++) if (idx < used[u][1] && idx + len > used[u][0]) return;
+      used.push([idx, idx + len]);
+      out.push({ d: d, m: m, y: y, index: idx, len: len, out: pad2(d) + "/" + pad2(m) + "/" + y });
+    }
+    var re, m;
+    re = /(\d{4})\s?[\-.\/]\s?(\d{1,2})\s?[\-.\/]\s?(\d{1,2})(?!\d)/g;
+    while ((m = re.exec(s))) push(+m[3], +m[2], +m[1], m.index, m[0].length);
+    re = /(?:^|[^\d])(\d{1,2})\s?[\-.\/ ]\s?(\d{1,2})\s?[\-.\/ ]\s?(\d{4}|\d{2})(?!\d)/g;
+    while ((m = re.exec(s))) {
+      var a = +m[1], b = +m[2], y = m[3].length === 2 ? century(+m[3], now) : +m[3];
+      var off = m[0].length - m[0].replace(/^[^\d]/, "").length;
+      if (a > 12 && b <= 12) push(a, b, y, m.index + off, m[0].length - off);
+      else if (b > 12 && a <= 12) push(b, a, y, m.index + off, m[0].length - off);
+      else push(a, b, y, m.index + off, m[0].length - off);
+      re.lastIndex = m.index + m[0].length;
+    }
+    var W = "([A-Za-z\\u00C0-\\u024F\\u0600-\\u06FF]{3,12}(?:\\s+[\\u0600-\\u06FF]{2,8})?)\\.?";
+    re = new RegExp("(\\d{1,2})\\s*[\\-.\\/ ]?\\s*" + W + "(?:\\s*\\/\\s*[A-Za-z\\u00C0-\\u024F]{3,10}\\.?)?\\s*[\\-.\\/, ]?\\s*(\\d{4})", "g");
+    while ((m = re.exec(s))) {
+      var mo = monthFrom(m[2]);
+      if (!mo && hasArabic(m[2])) mo = monthFrom(m[2].split(/\s+/)[0]);
+      if (mo) push(+m[1], mo, +m[3], m.index, m[0].length);
+    }
+    re = new RegExp(W + "\\s+(\\d{1,2})\\s*,?\\s*(\\d{4})", "g");
+    while ((m = re.exec(s))) {
+      var mo2 = monthFrom(m[1]);
+      if (mo2) push(+m[2], mo2, +m[3], m.index, m[0].length);
+    }
+    out.sort(function (p, q) { return p.index - q.index; });
+    return out;
+  }
+  function isPastDob(dt, now) {
+    now = now || new Date();
+    var t = new Date(dt.y, dt.m - 1, dt.d).getTime();
+    return t <= now.getTime() && dt.y >= now.getFullYear() - 120;
+  }
+
+  var SEX_WORDS = {
+    male: ["m", "male", "masculin", "masculino", "mannlich", "maschile", "maschio", "man", "mannelijk", "erkek", "e", "laki laki", "laki-laki", "lakilaki", "laki", "l", "h", "hombre", "homme", "varon", "ذكر"],
+    female: ["f", "female", "feminin", "feminine", "femenino", "feminino", "weiblich", "w", "femmina", "femminile", "vrouw", "vrouwelijk", "v", "kadin", "k", "perempuan", "p", "mujer", "femme", "انثي", "انثى", "أنثى"]
+  };
+  var SEX_MAP = {};
+  Object.keys(SEX_WORDS).forEach(function (g) { SEX_WORDS[g].forEach(function (w) { SEX_MAP[normKey(w)] = g === "male" ? "Male" : "Female"; }); });
+  function parseSex(str, labelKeys) {
+    var s = normKey(String(str || "").replace(/[\/|]/g, " "));
+    if (!s) return "";
+    if (SEX_MAP[s]) return fixV(s, SEX_MAP[s], labelKeys);
+    var parts = s.split(" ");
+    if (parts.length >= 2 && SEX_MAP[parts[0] + " " + parts[1]]) return SEX_MAP[parts[0] + " " + parts[1]];
+    for (var i = 0; i < parts.length && i < 3; i++) {
+      if (SEX_MAP[parts[i]]) return fixV(parts[i], SEX_MAP[parts[i]], labelKeys);
+    }
+    return "";
+  }
+  function fixV(tok, g, labelKeys) {
+    if (tok === "v" && labelKeys && labelKeys.indexOf("sexo") !== -1) return "Male";
+    return g;
+  }
+
+  // Nationality / country words -> ISO3
+  var NAT_EXTRA = {
+    FRA: ["francaise", "francais", "france", "french", "republique francaise"],
+    ESP: ["espanola", "espanol", "espana", "spanish", "espagnole"],
+    PRT: ["portuguesa", "portugues", "portugal"],
+    BRA: ["brasileira", "brasileiro", "brasil"],
+    DEU: ["deutsch", "deutsche", "deutschland", "allemande", "allemand", "alemana", "alemao", "alema", "tedesca", "tedesco", "duits", "duitse", "d"],
+    ITA: ["italiana", "italiano", "italia", "italienne"],
+    NLD: ["nederlandse", "nederlands", "nederland", "neerlandaise", "holland"],
+    TUR: ["tc", "t c", "turkiye", "turk", "turkey", "turkiye cumhuriyeti", "turque", "turca", "turkish"],
+    IDN: ["wni", "indonesia", "warga negara indonesia"],
+    PHL: ["filipino", "filipina", "philippines", "pilipinas", "philippine"],
+    IND: ["indian", "bharat", "bharatiya", "india"],
+    BEL: ["belge", "belga", "belgique", "belgie"], CHE: ["suisse", "schweizer", "schweiz", "svizzera"],
+    AUT: ["osterreich", "osterreichisch"], MAR: ["marocaine", "marocain", "maroc", "marroqui"],
+    DZA: ["algerienne", "algerien", "algerie"], TUN: ["tunisienne", "tunisien", "tunisie"],
+    SEN: ["senegalaise", "senegalais"], CIV: ["ivoirienne", "ivoirien", "cote d'ivoire"],
+    CMR: ["camerounaise", "camerounais"], LBN: ["libanaise", "libanais", "liban"],
+    MEX: ["mexicana", "mexicano"], COL: ["colombiana", "colombiano"], ARG: ["argentina", "argentino"],
+    MOZ: ["mocambicana", "mocambicano", "mocambique"], AGO: ["angolana", "angolano"],
+    GBR: ["british", "united kingdom", "uk", "great britain", "britannique", "britanica"], USA: ["american", "united states", "usa", "u s a", "estadounidense"],
+    ARE: ["emirati", "uae", "united arab emirates", "اماراتي", "اماراتيه", "الامارات", "الامارات العربيه المتحده"],
+    JOR: ["jordanian", "jordan", "اردني", "اردنيه", "الاردن", "الاردنيه", "الاردني"],
+    EGY: ["egyptian", "egypt", "مصري", "مصريه", "مصر", "المصريه"],
+    SAU: ["saudi", "saudi arabian", "سعودي", "سعوديه", "السعوديه", "السعودي"],
+    KWT: ["kuwaiti", "كويتي", "كويتيه", "الكويت"], QAT: ["qatari", "قطري", "قطريه", "قطر"],
+    OMN: ["omani", "عماني", "عمانيه", "عمان"], BHR: ["bahraini", "بحريني", "بحرينيه", "البحرين"],
+    LBN2: [], SYR: ["syrian", "سوري", "سوريه", "سوريا"], IRQ: ["iraqi", "عراقي", "عراقيه", "العراق"],
+    PSE: ["palestinian", "فلسطيني", "فلسطينيه", "فلسطين"], YEM: ["yemeni", "يمني", "يمنيه", "اليمن"],
+    SDN: ["sudanese", "سوداني", "سودانيه", "السودان"], LBY: ["libyan", "ليبي", "ليبيه", "ليبيا"],
+    PAK: ["pakistani", "pakistan", "باكستاني"], BGD: ["bangladeshi", "bangladesh", "بنغلاديشي"],
+    NPL: ["nepali", "nepalese", "nepal", "نيبالي"], LKA: ["sri lankan", "sri lanka", "سريلانكي"]
+  };
+  NAT_EXTRA.LBN = NAT_EXTRA.LBN.concat(["lebanese", "لبناني", "لبنانيه", "لبنان"]);
+  NAT_EXTRA.MAR = NAT_EXTRA.MAR.concat(["moroccan", "مغربي", "مغربيه", "المغرب"]);
+  NAT_EXTRA.DZA = NAT_EXTRA.DZA.concat(["جزائري", "جزائريه", "الجزائر"]);
+  NAT_EXTRA.TUN = NAT_EXTRA.TUN.concat(["تونسي", "تونسيه", "تونس"]);
+  NAT_EXTRA.IND = NAT_EXTRA.IND.concat(["هندي", "هنديه", "الهند"]);
+  NAT_EXTRA.PHL = NAT_EXTRA.PHL.concat(["فلبيني", "فلبينيه", "الفلبين"]);
+  delete NAT_EXTRA.LBN2;
+  var NAT_MAP = null;
+  function natMap() {
+    if (NAT_MAP) return NAT_MAP;
+    NAT_MAP = {};
+    var M = root.MrzTd1 || {};
+    function add(word, code, weak) {
+      var k = normKey(word);
+      if (!k || NAT_MAP[k]) return;
+      NAT_MAP[k] = { iso3: code, weak: !!weak };
+      if (hasArabic(k) && k.indexOf("ال") === 0 && !NAT_MAP[k.slice(2)]) NAT_MAP[k.slice(2)] = { iso3: code };
+    }
+    Object.keys(NAT_EXTRA).forEach(function (c) { NAT_EXTRA[c].forEach(function (w) { add(w, c, w.length <= 2); }); });
+    [M.ISO3_TO_FORM, M.ISO3_OTHER_NAMES, M.ISO3_TO_COUNTRY].forEach(function (tbl) {
+      if (!tbl) return;
+      Object.keys(tbl).forEach(function (c) {
+        var v = String(tbl[c] || "").replace(/\s*\(.*\)\s*/g, " ").trim();
+        if (v && v !== "UK" && v !== "USA") add(v, c);
+      });
+    });
+    return NAT_MAP;
+  }
+  function iso3Valid(code) {
+    var M = root.MrzTd1 || {};
+    return !!(M.ISO3_TO_COUNTRY && M.ISO3_TO_COUNTRY[code]);
+  }
+  // Find a country / nationality inside a string. Returns ISO3 or "".
+  function findCountry(str, allowCode) {
+    var raw = toLatinDigits(String(str || ""));
+    var map = natMap();
+    var whole = normKey(raw);
+    if (!whole) return "";
+    if (map[whole] && !(map[whole].weak && whole.length < 2)) return map[whole].iso3;
+    var toks = whole.split(" ");
+    var n, i, k;
+    for (n = Math.min(4, toks.length); n >= 1; n--) {
+      for (i = 0; i + n <= toks.length; i++) {
+        k = toks.slice(i, i + n).join(" ");
+        if (map[k] && !(map[k].weak && toks.length > 2)) return map[k].iso3;
+      }
+    }
+    if (allowCode) {
+      var codes = raw.match(/\b[A-Z]{3}\b/g) || [];
+      for (i = 0; i < codes.length; i++) if (iso3Valid(codes[i])) return codes[i];
+    }
+    for (i = 0; i < toks.length; i++) {
+      k = toks[i];
+      if (k.length < 6 || hasArabic(k) || matchLabelKey(k, 1)) continue;
+      for (var key in map) {
+        if (key.length >= 6 && key.indexOf(" ") === -1 && Math.abs(key.length - k.length) <= 1 && lev(k, key, 1) <= 1) return map[key].iso3;
+      }
+    }
+    return "";
+  }
+
+  var ISSUER_PHRASES = [
+    ["republique francaise", "FRA"], ["reino de espana", "ESP"], ["documento nacional de identidad", "ESP"], ["bundesrepublik deutschland", "DEU"], ["personalausweis", "DEU"],
+    ["repubblica italiana", "ITA"], ["carta di identita", "ITA"], ["turkiye cumhuriyeti", "TUR"], ["republic of turkiye", "TUR"], ["kimlik karti", "TUR"],
+    ["republik indonesia", "IDN"], ["provinsi", "IDN"], ["republika ng pilipinas", "PHL"], ["republic of the philippines", "PHL"], ["philsys", "PHL"],
+    ["government of india", "IND"], ["unique identification authority of india", "IND"], ["aadhaar", "IND"], ["islamic republic of pakistan", "PAK"],
+    ["hashemite kingdom of jordan", "JOR"], ["المملكه الاردنيه الهاشميه", "JOR"], ["arab republic of egypt", "EGY"], ["جمهوريه مصر العربيه", "EGY"],
+    ["kingdom of saudi arabia", "SAU"], ["المملكه العربيه السعوديه", "SAU"], ["state of kuwait", "KWT"], ["دوله الكويت", "KWT"], ["state of qatar", "QAT"], ["دوله قطر", "QAT"],
+    ["sultanate of oman", "OMN"], ["سلطنه عمان", "OMN"], ["kingdom of bahrain", "BHR"], ["مملكه البحرين", "BHR"], ["lebanese republic", "LBN"], ["الجمهوريه اللبنانيه", "LBN"],
+    ["syrian arab republic", "SYR"], ["الجمهوريه العربيه السوريه", "SYR"], ["republic of iraq", "IRQ"], ["جمهوريه العراق", "IRQ"], ["kingdom of morocco", "MAR"], ["المملكه المغربيه", "MAR"],
+    ["koninkrijk der nederlanden", "NLD"], ["royaume de belgique", "BEL"], ["republica portuguesa", "PRT"], ["republica federativa do brasil", "BRA"],
+    ["estados unidos mexicanos", "MEX"], ["republica de colombia", "COL"], ["republica argentina", "ARG"], ["state of palestine", "PSE"], ["دوله فلسطين", "PSE"]
+  ];
+  function findIssuer(lines) {
+    var i, j, k;
+    var top = lines.slice(0, Math.min(lines.length, 8));
+    for (i = 0; i < top.length; i++) {
+      k = normKey(top[i].text);
+      for (j = 0; j < ISSUER_PHRASES.length; j++) {
+        var p = normKey(ISSUER_PHRASES[j][0]);
+        if (k.indexOf(p) !== -1) return ISSUER_PHRASES[j][1];
+      }
+      var m = /(?:republic|kingdom|state|commonwealth|republique|republica|repubblica|republik|royaume|reino)\s+(?:of\s+(?:the\s+)?|de\s+(?:la\s+)?|du\s+|del\s+)?([a-z ]{3,30})/.exec(k);
+      if (m) {
+        var c = findCountry(m[1], false);
+        if (c) return c;
+      }
+    }
+    return "";
+  }
+
+  // ---------- field value cleaning ----------
+  function cleanName(str) {
+    var toks = String(str || "").replace(/[0-9]/g, " ").replace(/[^A-Za-z\u00C0-\u024F\u0600-\u06FF\s'\-]/g, " ").split(/\s+/).filter(Boolean);
+    toks = toks.filter(function (t) { return /[A-Za-z\u00C0-\u024F\u0600-\u06FF]/.test(t) && !/^[-']+$/.test(t); });
+    toks = toks.filter(function (t) { return !LABEL_BY_KEY[normKey(t)] || !(t !== t.toUpperCase() || hasArabic(t)); });
+    var latin = toks.filter(function (t) { return hasLatin(t); });
+    var arabic = toks.filter(function (t) { return hasArabic(t); });
+    var use = latin.length ? latin : arabic;
+    if (latin.length) {
+      var upper = use.filter(function (t) { return t === t.toUpperCase(); });
+      if (upper.length && upper.length < use.length) use = upper;
+      // drop single stray letters at the ends
+      while (use.length > 1 && use[use.length - 1].length === 1) use.pop();
+      while (use.length > 1 && use[0].length === 1) use.shift();
+    }
+    if (use.length > 6) use = use.slice(0, 6);
+    var out = use.join(" ").trim();
+    return out.replace(/[^A-Za-z\u00C0-\u024F\u0600-\u06FF]/g, "").length >= 2 ? out : "";
+  }
+  function cleanIdNumber(str, relaxed) {
+    var s = toLatinDigits(String(str || "")).toUpperCase();
+    var toks = s.split(/\s+/).filter(Boolean);
+    for (var i = 0; i < toks.length; i++) {
+      var t = toks[i].replace(/[^A-Z0-9\-]/g, "").replace(/^-+|-+$/g, "");
+      var digits = (t.match(/\d/g) || []).length;
+      if (t.length >= 5 && (digits >= 3 || (relaxed && digits >= 1 && t.length <= 14))) {
+        if (/^\d+$/.test(t)) {
+          var j = i + 1, all = t;
+          while (j < toks.length && /^\d{3,6}$/.test(toks[j]) && (all + toks[j]).length <= 18) { all += " " + toks[j]; j++; }
+          return all;
+        }
+        if (digits >= t.length - 3) t = t.replace(/O/g, "0");
+        return t;
+      }
+      if (/^\d{4}$/.test(t) && toks[i + 1] && /^\d{4}$/.test(toks[i + 1])) {
+        var grp = t, q = i + 1;
+        while (q < toks.length && /^\d{4}$/.test(toks[q]) && grp.length < 19) { grp += " " + toks[q]; q++; }
+        return grp;
+      }
+    }
+    return "";
+  }
+  function looksLikeIdToken(t) {
+    t = String(t || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+    var digits = (t.match(/\d/g) || []).length;
+    return t.length >= 6 && t.length <= 18 && digits >= 4;
+  }
+
+  function fieldValue(field, text, labelKeys, now) {
+    var t = String(text || "").trim();
+    if (!t) return null;
+    switch (field) {
+      case "surname": case "given": case "full": case "middle": {
+        var n = cleanName(t);
+        return n ? { value: n } : null;
+      }
+      case "sex": {
+        var g = parseSex(t, labelKeys);
+        return g ? { value: g } : null;
+      }
+      case "dob": {
+        var ds = findDates(t, now);
+        for (var i = 0; i < ds.length; i++) if (isPastDob(ds[i], now)) return { value: ds[i].out };
+        return null;
+      }
+      case "pobdob": {
+        var ds2 = findDates(t, now);
+        var dob = null;
+        for (var j = 0; j < ds2.length; j++) if (isPastDob(ds2[j], now)) { dob = ds2[j]; break; }
+        var place = dob ? (t.slice(0, dob.index) + " " + t.slice(dob.index + dob.len)) : t;
+        place = place.replace(/[,;]/g, " ").replace(/\s+/g, " ").trim();
+        if (!dob && !place) return null;
+        return { value: dob ? dob.out : "", place: place };
+      }
+      case "nationality": {
+        var c = findCountry(t, true);
+        return c ? { value: c } : null;
+      }
+      case "pob": {
+        var place2 = t.replace(/\s+/g, " ").trim();
+        if (!/[A-Za-z\u00C0-\u024F\u0600-\u06FF]{2,}/.test(place2)) return null;
+        return { value: place2 };
+      }
+      case "idnum": {
+        var id = cleanIdNumber(t, true);
+        return id ? { value: id } : null;
+      }
+    }
+    return null;
+  }
+
+  function tokensText(tokens, a, b) {
+    var out = [];
+    for (var i = a; i < b; i++) out.push(tokens[i].o);
+    return out.join(" ").replace(/^[\s\/:|\-=]+/, "").trim();
+  }
+
+  function lineIsOnlyLabels(info) {
+    if (!info.spans.length) return false;
+    var covered = 0, total = 0;
+    for (var i = 0; i < info.tokens.length; i++) {
+      if (info.tokens[i].sep) continue;
+      total++;
+      for (var s = 0; s < info.spans.length; s++) if (i >= info.spans[s].start && i < info.spans[s].end) { covered++; break; }
+    }
+    return total > 0 && covered === total;
+  }
+
+  // Typed pick for multi-column rows without boxes.
+  function typedPick(field, text, labelKeys, now) {
+    return fieldValue(field, text, labelKeys, now);
+  }
+
+  function columnText(valueInfo, span, labelInfo) {
+    var toks = valueInfo.tokens;
+    if (!span.bbox || !toks.length || !toks[0].bbox) return null;
+    var others = labelInfo.spans.filter(function (s) { return s !== span && s.bbox; });
+    var x0, x1;
+    var w = span.bbox.x1 - span.bbox.x0;
+    var tol = Math.max(10, Math.min(60, w * 0.35));
+    if (span.arabic) {
+      x1 = span.bbox.x1 + tol;
+      x0 = -Infinity;
+      others.forEach(function (s) { if (s.bbox.x1 < span.bbox.x0 && s.bbox.x1 > x0) x0 = s.bbox.x1; });
+      if (x0 !== -Infinity) x0 += tol * 0.3;
+    } else {
+      x0 = span.bbox.x0 - tol;
+      x1 = Infinity;
+      others.forEach(function (s) { if (s.bbox.x0 > span.bbox.x1 && s.bbox.x0 < x1) x1 = s.bbox.x0; });
+      if (x1 !== Infinity) x1 -= tol * 0.3;
+    }
+    var picked = [];
+    toks.forEach(function (t) {
+      if (!t.bbox) return;
+      var cx = (t.bbox.x0 + t.bbox.x1) / 2;
+      if (cx >= x0 && cx <= x1) picked.push(t.o);
+    });
+    return picked.join(" ");
+  }
+
+  // ---------- main parse ----------
+  function parse(input, opts) {
+    opts = opts || {};
+    var now = opts.now || new Date();
+    var lines = toLines(input);
+    var infos = lines.map(function (l) { var tokens = tokenizeLine(l); return { line: l, tokens: tokens, spans: findSpans(tokens) }; });
+    var found = {};   // field -> {value, conf, rank, place}
+    var labelsFound = 0;
+    function put(field, val, conf, rank, extra) {
+      if (!val) return;
+      var cur = found[field];
+      rank = rank || 0;
+      if (cur && (cur.rank > rank || (cur.rank === rank && cur.conf >= conf))) return;
+      found[field] = { value: val.value, conf: conf, rank: rank, place: val.place || (extra && extra.place) || "" };
+      if (field === "pobdob") {
+        if (val.value) put("dob", { value: val.value }, conf, 0);
+        if (val.place) put("pob", { value: val.place }, conf, 0);
+      }
+    }
+    infos.forEach(function (info, li) {
+      labelsFound += info.spans.length;
+      var multi = info.spans.length > 1;
+      info.spans.forEach(function (span, si) {
+        var next = info.spans[si + 1];
+        var endTok = next ? next.start : info.tokens.length;
+        var inline = tokensText(info.tokens, span.end, endTok);
+        var val = inline ? fieldValue(span.field, inline, span.keys, now) : null;
+        if (!val && span.arabic && span.start > 0) {
+          var prevEnd = si > 0 ? info.spans[si - 1].end : 0;
+          var before = tokensText(info.tokens, prevEnd, span.start);
+          if (before && hasArabic(before)) val = fieldValue(span.field, before, span.keys, now);
+        }
+        if (val) { put(span.field, val, 0.9, span.rank); return; }
+        // Look below (skip pure label lines, at most 2 lines down).
+        for (var d = 1; d <= 2 && li + d < infos.length; d++) {
+          var below = infos[li + d];
+          if (lineIsOnlyLabels(below)) continue;
+          var text = null;
+          if (multi) {
+            text = columnText(below, span, info);
+            if (text == null) {
+              var full = below.line.text;
+              if (span.field === "surname" || span.field === "given" || span.field === "full" || span.field === "middle") {
+                var nameSpans = info.spans.filter(function (s) { return /^(surname|given|full|middle)$/.test(s.field); });
+                var words = cleanName(full).split(" ").filter(Boolean);
+                var nIdx = nameSpans.indexOf(span);
+                if (nameSpans.length === 1) text = full;
+                else if (words.length >= nameSpans.length) text = nIdx === nameSpans.length - 1 ? words.slice(nIdx).join(" ") : words[nIdx];
+                if (text) { var v0 = fieldValue(span.field, text, span.keys, now); if (v0) put(span.field, v0, 0.5, span.rank); }
+                break;
+              }
+              text = full;
+            }
+          } else {
+            var firstSpan = below.spans[0];
+            text = firstSpan ? tokensText(below.tokens, 0, firstSpan.start) : below.line.text;
+          }
+          var v = text ? typedPick(span.field, text, span.keys, now) : null;
+          if (v) put(span.field, v, multi && !below.tokens[0].bbox ? 0.6 : 0.8, span.rank);
+          break;
+        }
+      });
+    });
+
+    var notes = [];
+    var unsure = {};
+    var allText = lines.map(function (l) { return l.text; }).join("\n");
+    // Fallbacks without labels.
+    if (!found.dob) {
+      var ds = findDates(allText, now).filter(function (x) { return isPastDob(x, now); });
+      ds.sort(function (a, b) { return (a.y - b.y) || (a.m - b.m) || (a.d - b.d); });
+      if (ds.length) { found.dob = { value: ds[0].out, conf: 0.4 }; }
+    }
+    if (!found.sex) {
+      for (var si2 = 0; si2 < lines.length; si2++) {
+        var ws = normKey(lines[si2].text).split(" ");
+        for (var w = 0; w < ws.length; w++) {
+          var two = ws[w] + " " + (ws[w + 1] || "");
+          var hit = (ws[w].length > 2 && SEX_MAP[ws[w]]) || (SEX_MAP[two] && two.length > 4 ? SEX_MAP[two] : "");
+          if (hit) { found.sex = { value: hit, conf: 0.5 }; break; }
+        }
+        if (found.sex) break;
+      }
+    }
+    var issuer = findIssuer(lines);
+    if (!found.nationality) {
+      for (var ni = 0; ni < lines.length && !found.nationality; ni++) {
+        var lk = normKey(lines[ni].text);
+        if (/republic|kingdom|republique|republica|repubblica|republik|royaume|reino|cumhuriyeti|المملكه|جمهوريه|دوله/.test(lk)) continue;
+        if (lk.split(" ").length > 4 || infos[ni].spans.length) continue;
+        var cc = findCountry(lines[ni].text, false);
+        if (cc) found.nationality = { value: cc, conf: 0.4 };
+      }
+    }
+    if (!found.nationality && issuer) found.nationality = { value: issuer, conf: 0.3, fromIssuer: true };
+    if (!found.idnum) {
+      var best = "", bestScore = 0;
+      var toksAll = toLatinDigits(allText).toUpperCase().split(/\s+/);
+      for (var ti = 0; ti < toksAll.length; ti++) {
+        var tk = toksAll[ti].replace(/[^A-Z0-9\-]/g, "").replace(/^-+|-+$/g, "");
+        if (!looksLikeIdToken(tk)) continue;
+        if (findDates(toksAll[ti], now).length) continue;
+        var sc = tk.length + ((tk.match(/\d/g) || []).length);
+        if (sc > bestScore) { bestScore = sc; best = tk; }
+      }
+      if (!best) {
+        var aad = /(?:^|\D)(\d{4}\s\d{4}\s\d{4})(?!\d)/.exec(toLatinDigits(allText));
+        if (aad) best = aad[1];
+      }
+      if (best) found.idnum = { value: best, conf: 0.4 };
+    }
+
+    // No name labels at all (e.g. Aadhaar): take a plain 2-5 word line of letters, nearest above the birth date.
+    if (!found.surname && !found.given && !found.full) {
+      var dobLine = -1;
+      for (var dl = 0; dl < lines.length; dl++) if (found.dob && findDates(lines[dl].text, now).some(function (x) { return x.out === found.dob.value; })) { dobLine = dl; break; }
+      var cand = [];
+      infos.forEach(function (info, idx) {
+        var t = info.line.text.trim();
+        if (info.spans.length) return;
+        if (/\d/.test(t)) return;
+        var ws2 = t.split(/\s+/);
+        if (ws2.length < 2 || ws2.length > 5) return;
+        if (!ws2.every(function (x) { return /^[A-Z\u00C0-\u00DE][A-Za-z\u00C0-\u024F'\-]+$/.test(x) || /^[\u0600-\u06FF]{2,}$/.test(x); })) return;
+        var k2 = normKey(t);
+        if (/government|republic|kingdom|authority|identity|identification|card|state|ministry|department|republique|republica|repubblica|republik|cumhuriyeti|aadhaar|aadmi|adhikar|المملكه|جمهوريه|بطاقه|وزاره|دوله|الاحوال/.test(k2)) return;
+        if (findCountry(t, false)) return;
+        if (parseSex(t)) return;
+        cand.push({ idx: idx, text: t, dist: dobLine >= 0 ? (dobLine - idx >= 0 ? dobLine - idx : 50 + idx - dobLine) : idx });
+      });
+      cand.sort(function (a, b) { return a.dist - b.dist; });
+      if (cand.length) found.full = { value: cleanName(cand[0].text), conf: 0.4 };
+    }
+    // Names
+    var surname = found.surname ? found.surname.value : "";
+    var given = found.given ? found.given.value : "";
+    var full = found.full ? found.full.value : "";
+    var nameConf = Math.min(found.surname ? found.surname.conf : 1, found.given ? found.given.conf : 1);
+    if (full && (!surname || !given)) {
+      var parts = full.split(/\s+/);
+      if (surname && !given) {
+        var rest = parts.filter(function (p) { return surname.split(/\s+/).indexOf(p) === -1; });
+        given = rest.join(" ");
+      } else if (given && !surname) {
+        var rest2 = parts.filter(function (p) { return given.split(/\s+/).indexOf(p) === -1; });
+        surname = rest2.join(" ");
+      } else if (parts.length >= 2) {
+        if (hasArabic(full)) { given = parts[0]; surname = parts.slice(1).join(" "); }
+        else { given = parts.slice(0, -1).join(" "); surname = parts[parts.length - 1]; }
+        notes.push("full name was split into first name and surname");
+      } else {
+        given = full;
+      }
+      nameConf = Math.min(nameConf, found.full.conf, 0.6);
+    }
+
+    var M = root.MrzTd1 || {};
+    var nat = { nationality: "", nationalityOther: "" };
+    var natIso = found.nationality ? found.nationality.value : "";
+    if (natIso && M.mapIso3ToForm) { var mf = M.mapIso3ToForm(natIso); nat = { nationality: mf.nationality, nationalityOther: mf.nationalityOther }; }
+    var countryOfBirth = "";
+    var cobConf = 0;
+    if (found.pob) {
+      var pc = findCountry(found.pob.value, true);
+      if (pc && M.mapIso3ToCountry) { countryOfBirth = M.mapIso3ToCountry(pc); cobConf = found.pob.conf; }
+      else if (issuer && M.mapIso3ToCountry) { countryOfBirth = M.mapIso3ToCountry(issuer); cobConf = 0.3; }
+    }
+    var fromIso = issuer || natIso;
+    var countryFrom = fromIso && M.mapIso3ToCountry ? M.mapIso3ToCountry(fromIso) : "";
+
+    var out = {
+      cardKind: "general",
+      name: given || "",
+      surname: surname || "",
+      gender: found.sex ? found.sex.value : "",
+      dob: found.dob ? found.dob.value : "",
+      nationality: nat.nationality,
+      nationalityOther: nat.nationalityOther,
+      docNumber: found.idnum ? found.idnum.value : "",
+      eid: found.idnum ? found.idnum.value : "",
+      placeOfBirth: found.pob ? found.pob.value : "",
+      countryOfBirth: countryOfBirth,
+      countryFrom: countryFrom,
+      issuer: "",
+      issuerIso3: issuer,
+      labelsFound: labelsFound,
+      hasArabicText: hasArabic(allText),
+      notes: notes,
+      unsure: []
+    };
+    var CONF = 0.75;
+    if ((out.name || out.surname) && nameConf < CONF) { if (out.name) unsure.patientName = 1; if (out.surname) unsure.patientSurname = 1; }
+    if (out.gender && found.sex.conf < CONF) unsure.gender = 1;
+    if (out.dob && found.dob.conf < CONF) unsure.dateOfBirth = 1;
+    if (out.nationality && found.nationality.conf < CONF) unsure.nationality = 1;
+    if (out.docNumber && found.idnum.conf < CONF) unsure.eid = 1;
+    if (out.countryOfBirth && cobConf < CONF) unsure.countryOfBirth = 1;
+    if (out.countryFrom && !issuer) unsure.countryFrom = 1;
+    out.unsure = Object.keys(unsure);
+    out.fieldCount = countFields(out);
+    return out;
+  }
+
+  function countFields(p) {
+    if (!p) return 0;
+    var n = 0;
+    ["name", "surname", "gender", "dob", "nationality", "docNumber"].forEach(function (k) { if (p[k]) n++; });
+    return n;
+  }
+
+  // Combine a Latin (eng) read with an Arabic read. Latin values win; Arabic fills the gaps.
+  function mergeReads(primary, secondary) {
+    if (!primary) return secondary;
+    if (!secondary) return primary;
+    var out = {};
+    Object.keys(primary).forEach(function (k) { out[k] = primary[k]; });
+    var unsure = (primary.unsure || []).slice();
+    var map = { name: "patientName", surname: "patientSurname", gender: "gender", dob: "dateOfBirth", nationality: "nationality", docNumber: "eid", countryOfBirth: "countryOfBirth", countryFrom: "countryFrom" };
+    var usedArabic = false;
+    Object.keys(map).forEach(function (k) {
+      var id = map[k];
+      var pv = primary[k], sv = secondary[k];
+      var pUnsure = unsure.indexOf(id) !== -1;
+      var sUnsure = (secondary.unsure || []).indexOf(id) !== -1;
+      if (sv && (!pv || (pUnsure && !sUnsure && !(k === "name" || k === "surname")))) {
+        out[k] = sv;
+        if (k === "nationality") out.nationalityOther = secondary.nationalityOther;
+        if (k === "docNumber") out.eid = sv;
+        usedArabic = true;
+        var idx = unsure.indexOf(id);
+        if (idx !== -1) unsure.splice(idx, 1);
+        if (sUnsure) unsure.push(id);
+      }
+    });
+    if (!out.issuerIso3 && secondary.issuerIso3) out.issuerIso3 = secondary.issuerIso3;
+    out.unsure = unsure;
+    out.notes = (primary.notes || []).concat((secondary.notes || []).filter(function (n) { return (primary.notes || []).indexOf(n) === -1; }));
+    out.labelsFound = (primary.labelsFound || 0) + (secondary.labelsFound || 0);
+    out.usedArabic = usedArabic;
+    out.fieldCount = countFields(out);
+    return out;
+  }
+
+  var ARAB_HINT_RE = /\b(ARAB|JORDAN|HASHEMITE|EGYPT|SAUDI|KUWAIT|QATAR|OMAN|BAHRAIN|IRAQ|SYRIA|LEBANON|LEBANESE|LIBYA|MOROCCO|ALGERIA|TUNISIA|SUDAN|YEMEN|PALESTIN|EMIRATES|KINGDOM)\b/i;
+  // Should we load the Arabic reading file for this card?
+  function needsArabic(parsed, text, forced) {
+    if (forced) return true;
+    if (!parsed) return true;
+    var n = countFields(parsed);
+    if (!parsed.name && !parsed.surname) return true;
+    if (n < 3) return true;
+    if (ARAB_HINT_RE.test(String(text || "")) && (parsed.unsure || []).some(function (u) { return u === "patientName" || u === "patientSurname"; })) return true;
+    return false;
+  }
+
+  var api = {
+    parse: parse,
+    mergeReads: mergeReads,
+    needsArabic: needsArabic,
+    findDates: findDates,
+    parseSex: parseSex,
+    findCountry: findCountry,
+    findIssuer: findIssuer,
+    normKey: normKey,
+    countFields: countFields,
+    hasArabic: hasArabic,
+    LABELS: LABELS
+  };
+  if (typeof module !== "undefined" && module.exports) module.exports = api;
+  root.GeneralCard = api;
+})(typeof globalThis !== "undefined" ? globalThis : this);
+
 
   var MRZ_OCRB_LANG_PATHS = [
     "https://cdn.jsdelivr.net/gh/uwolfer/tesseract-mrz@master/lang",
@@ -5181,7 +6533,7 @@ function mapEidNationality(raw) {
         workerPath: TESS_WORKER_PATH,
         corePath: TESS_CORE_PATH,
         workerBlobURL: blobUrl,
-        cacheMethod: "none",
+        cacheMethod: "write",
         logger: function (m) {
           if (!onStatus || !m || !m.status) return;
           var status = String(m.status);
@@ -5583,6 +6935,10 @@ function mapEidNationality(raw) {
       if (!isFinite(slope) || Math.abs(slope) > 0.25) slope = 0;
       var icpt = (sy - slope * sx) / m;
       // How much the row looks like machine-readable code: capitals of one height on an even pitch.
+      // A barcode is a row of thin bars of one height: not code lines.
+      var thin = 0;
+      items.forEach(function (c) { if ((c.x1 - c.x0) < c.hh * 0.22) thin++; });
+      if (thin > m * 0.7) return;
       var med = hh[Math.floor(m / 2)], same = 0, xs = [], gaps = [], even = 0, q;
       items.forEach(function (c) { if (Math.abs(c.hh - med) <= med * 0.16) same++; xs.push(c.cx); });
       xs.sort(function (p, q2) { return p - q2; });
@@ -5857,8 +7213,11 @@ function mapEidNationality(raw) {
       return !fixedUp || (out.minVotes || 0) >= 2;
     }
     var v, f, b, rec, cleaned;
+    var chevSeen = 0;
     for (v = 0; v < variants.length; v++) {
       if (v > 0 && Date.now() - t0 > budget) break;
+      // Real code lines are full of "<" fillers. Two clean-ups with almost none: this is printed text, stop.
+      if (v >= 2 && chevSeen < 3) break;
       tries++;
       if (onStatus) onStatus((label || "Reading the code lines") + "… (step " + tries + " of " + variants.length + ")");
       f = mrzFlatten(mrzBoxBlur(G.g, w, h, variants[v].blur * charH / 32), w, h, charH);
@@ -5879,6 +7238,7 @@ function mapEidNationality(raw) {
       }
       // Whole block in one pass.
       rec = await recognizeMrzCanvas(worker, mrzBinaryCanvas(cleaned, w, h, null, pad), "6");
+      chevSeen += (String(rec.text || "").match(/</g) || []).length;
       var blockLines = String(rec.text || "").split(/\n/).map(mrzCleanLine).filter(function (l) { return l.length >= 12; });
       if (blockLines.length) {
         if (rowsBase.length && blockLines.length === rowsBase.length) blockLines.forEach(function (l, i) { addLine(i, l); });
@@ -5890,6 +7250,7 @@ function mapEidNationality(raw) {
         var r, lr;
         for (r = 0; r < rowsBase.length; r++) {
           lr = await recognizeMrzCanvas(worker, mrzRowCanvas(cleaned, w, h, rowsBase[r], charH, pad, rowsBase[r + 1], rowsBase[r - 1]), "7");
+          chevSeen += (String(lr.text || "").match(/</g) || []).length;
           var lt = mrzCleanLine(lr.text);
           if (lt.length >= 12) addLine(r, lt);
         }
@@ -5900,6 +7261,7 @@ function mapEidNationality(raw) {
       if (v >= 1 && out.score < 0) break;
     }
     out.ms = Date.now() - t0;
+    out.chev = chevSeen;
     out.charHeight = loc.charH;
     out.tries = tries;
     return out;
@@ -5911,7 +7273,8 @@ function mapEidNationality(raw) {
     return mrzScaleCanvas(rotated, Math.max(1, Math.round(rotated.width * k)));
   }
 
-  async function recognizeMrzSource(worker, src, onStatus, alreadyUpright) {
+  // stage: "fast" = only the quick code-line cut-out reads; "slow" = skip those and run the full search.
+  async function recognizeMrzSource(worker, src, onStatus, alreadyUpright, stage) {
     var best = { text: "", parsed: null, score: -1, confidence: -1 };
     var orientations = [];
     var a, angle, rotated, coarse, rec, parsed, score;
@@ -5921,6 +7284,8 @@ function mapEidNationality(raw) {
     function overTime() { return Date.now() - tStart > MRZ_TOTAL_BUDGET_MS * (best.score >= 0 ? 1 : 1.5); }
     // Fast path: find the code lines without OCR (upright or sideways), cut them out at the ideal
     // letter size and read them. Most photos finish here in a second or two.
+    var fastChev = 0;
+    if (stage !== "slow") {
     if (onStatus) onStatus("Finding the code lines…");
     var base0 = src.getContext ? src : mrzDrawRotated(src, 0);
     var found = [], fr, floc;
@@ -5945,11 +7310,14 @@ function mapEidNationality(raw) {
         if (flip) fl = { charH: fl.charH, angle: fl.angle, rows: fl.rows, score: fl.score, w: fl.w, h: fl.h,
           x: fcan.width - fl.x - fl.w, y: fcan.height - fl.y - fl.h };
         fone = await mrzReadStrip(worker, fcan, onStatus, "Reading the code lines", stripBudget(), fl);
+        if ((fone.chev || 0) > fastChev) fastChev = fone.chev;
         best = considerMrz(best, { text: fone.text, confidence: fone.confidence }, fone.parsed);
         if (mrzIsPass(fone.parsed)) return best;
         if (fone.parsed && fone.parsed.ok) break;
       }
     }
+    }
+    if (stage === "fast") { best.fastChev = fastChev; return best; }
     src = mrzPadSource(src);
     if (onStatus) onStatus(alreadyUpright ? "Reading the code lines…" : "Turning photo…");
     for (a = 0; a < angles.length; a++) {
@@ -5973,6 +7341,7 @@ function mapEidNationality(raw) {
       best = considerMrz(best, rec, parsed);
       if (mrzIsPass(parsed)) return best;
     }
+    if (stage === "turn") return best;
     orientations.sort(function (x, y) { return y.score - x.score; });
     var picked = orientations[0];
     if (onStatus) onStatus("Finding the code lines…");
@@ -6050,8 +7419,380 @@ function mapEidNationality(raw) {
     }
   }
 
+  var MRZ_CROP_LOCATE_MS = 600;
+  var mrzCropState = null;
+  var mrzCropWait = null;
+
+  function sourceToCanvas(src) {
+    if (src && src.getContext) return src;
+    return mrzCropCanvas(src, 0, 0, src.width, src.height);
+  }
+
+  function clampMrzCropBox(box, sw, sh) {
+    sw = Math.max(1, sw || 1);
+    sh = Math.max(1, sh || 1);
+    var minW = Math.max(32, Math.min(120, sw * 0.18));
+    var minH = Math.max(24, Math.min(48, sh * 0.12));
+    if (minW > sw) minW = sw;
+    if (minH > sh) minH = sh;
+    var x = Number(box && box.x) || 0;
+    var y = Number(box && box.y) || 0;
+    var w = Number(box && box.w) || 0;
+    var h = Number(box && box.h) || 0;
+    if (w < minW) w = minW;
+    if (h < minH) h = minH;
+    if (w > sw) w = sw;
+    if (h > sh) h = sh;
+    if (x < 0) x = 0;
+    if (y < 0) y = 0;
+    if (x + w > sw) x = sw - w;
+    if (y + h > sh) y = sh - h;
+    if (x < 0) { x = 0; w = sw; }
+    if (y < 0) { y = 0; h = sh; }
+    return { x: x, y: y, w: w, h: h };
+  }
+
+  // Default box: around auto-found code lines, or the bottom third (passport code),
+  // or almost the whole photo if it is already a short wide strip.
+  function defaultMrzCropRect(src, loc, mode) {
+    var w = (src && src.width) || 0;
+    var h = (src && src.height) || 0;
+    if (w < 1 || h < 1) return { x: 0, y: 0, w: 1, h: 1 };
+    if (mode === "id" && !(loc && loc.w > 20 && loc.h > 10)) {
+      var mm = Math.max(2, Math.round(Math.min(w, h) * 0.01));
+      return clampMrzCropBox({ x: mm, y: mm, w: w - mm * 2, h: h - mm * 2 }, w, h);
+    }
+    if (loc && loc.w > 20 && loc.h > 10) {
+      var padX = Math.max(8, loc.charH || 16);
+      var padY = Math.max(8, (loc.charH || 16) * 0.8);
+      var x0 = Math.max(0, loc.x - padX);
+      var y0 = Math.max(0, loc.y - padY);
+      var x1 = Math.min(w, loc.x + loc.w + padX);
+      var y1 = Math.min(h, loc.y + loc.h + padY);
+      return clampMrzCropBox({ x: x0, y: y0, w: x1 - x0, h: y1 - y0 }, w, h);
+    }
+    if (h <= w * 0.45) {
+      var m = Math.max(2, Math.round(Math.min(w, h) * 0.02));
+      return clampMrzCropBox({ x: m, y: m, w: w - m * 2, h: h - m * 2 }, w, h);
+    }
+    var marginX = Math.max(4, Math.round(w * 0.02));
+    var boxH = Math.max(1, h / 3);
+    return clampMrzCropBox({
+      x: marginX,
+      y: Math.max(0, h - boxH - Math.round(h * 0.03)),
+      w: w - marginX * 2,
+      h: boxH
+    }, w, h);
+  }
+
+  function quickMrzCropRect(src, mode) {
+    var loc = null;
+    var t0 = Date.now();
+    try { loc = mrzLocate(src); } catch (err) { loc = null; }
+    if (mode === "id") {
+      // Only jump to the code lines when they are clearly there; otherwise keep the whole card.
+      if (!mrzLocLooksReal(loc)) loc = null;
+    } else if (loc && (Date.now() - t0) > MRZ_CROP_LOCATE_MS) {
+      if (!(loc.rows >= 2 && (loc.score || 0) >= 80)) loc = null;
+    }
+    return defaultMrzCropRect(src, loc, mode);
+  }
+
+  var MRZ_FOUND_MIN_SCORE = 125;
+  function mrzLocLooksReal(loc) {
+    return !!(loc && loc.rows >= 2 && (loc.score || 0) >= MRZ_FOUND_MIN_SCORE);
+  }
+
+  // Fast check (no OCR): are there MRZ code lines in this picture, upright or sideways?
+  function findMrzLinesQuick(src) {
+    var small = src;
+    var longSide = Math.max(src.width || 0, src.height || 0);
+    if (longSide > 1600) small = mrzScaleCanvas(src, Math.max(1, Math.round(src.width * 1600 / longSide)));
+    var angles = [0, 90];
+    for (var i = 0; i < angles.length; i++) {
+      var pic = angles[i] ? mrzDrawRotated(small, angles[i]) : small;
+      var loc = null;
+      try { loc = mrzLocate(pic); } catch (err) { loc = null; }
+      if (mrzLocLooksReal(loc)) return { angle: angles[i], loc: loc };
+    }
+    return null;
+  }
+
+  function applyMrzCrop(src, rect) {
+    var box = clampMrzCropBox(rect || { x: 0, y: 0, w: src.width, h: src.height }, src.width, src.height);
+    return mrzCropCanvas(src, box.x, box.y, box.w, box.h);
+  }
+
+  function mrzCropPointerPos(ev) {
+    var stage = el("mrzCropStage");
+    var r = stage.getBoundingClientRect();
+    return { x: ev.clientX - r.left, y: ev.clientY - r.top };
+  }
+
+  function syncMrzCropBoxEl() {
+    if (!mrzCropState || !mrzCropState.disp) return;
+    var boxEl = el("mrzCropBox");
+    if (!boxEl) return;
+    var d = mrzCropState.disp;
+    var b = mrzCropState.box;
+    boxEl.style.left = (d.x + b.x * d.scale) + "px";
+    boxEl.style.top = (d.y + b.y * d.scale) + "px";
+    boxEl.style.width = (b.w * d.scale) + "px";
+    boxEl.style.height = (b.h * d.scale) + "px";
+  }
+
+  function layoutMrzCrop() {
+    if (!mrzCropState || !mrzCropState.open || !mrzCropState.src) return;
+    var stage = el("mrzCropStage");
+    var canvas = el("mrzCropCanvas");
+    if (!stage || !canvas) return;
+    var src = mrzCropState.src;
+    var sw = src.width, sh = src.height;
+    var rect = stage.getBoundingClientRect();
+    var dw = Math.max(1, Math.floor(rect.width));
+    var dh = Math.max(1, Math.floor(rect.height));
+    var dpr = Math.min(2, window.devicePixelRatio || 1);
+    canvas.width = Math.max(1, Math.round(dw * dpr));
+    canvas.height = Math.max(1, Math.round(dh * dpr));
+    canvas.style.width = dw + "px";
+    canvas.style.height = dh + "px";
+    var inset = 26;
+    var innerW = Math.max(1, dw - inset * 2);
+    var innerH = Math.max(1, dh - inset * 2);
+    var scale = Math.min(innerW / sw, innerH / sh);
+    var vw = sw * scale, vh = sh * scale;
+    var vx = (dw - vw) / 2, vy = (dh - vh) / 2;
+    mrzCropState.disp = { x: vx, y: vy, w: vw, h: vh, scale: scale, dw: dw, dh: dh };
+    var ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.fillStyle = "#000";
+    ctx.fillRect(0, 0, dw, dh);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(src, 0, 0, sw, sh, vx, vy, vw, vh);
+    mrzCropState.box = clampMrzCropBox(mrzCropState.box, sw, sh);
+    syncMrzCropBoxEl();
+  }
+
+  function onMrzCropResize() {
+    if (mrzCropState && mrzCropState.open) layoutMrzCrop();
+  }
+
+  function onMrzCropPointerDown(ev) {
+    if (!mrzCropState || !mrzCropState.open) return;
+    ev.preventDefault();
+    ev.stopPropagation();
+    if (mrzCropState.drag) return;
+    mrzCropState.touched = true;
+    var handle = ev.currentTarget.getAttribute("data-handle") || "move";
+    var pt = mrzCropPointerPos(ev);
+    var b = mrzCropState.box;
+    mrzCropState.drag = {
+      handle: handle,
+      pointerId: ev.pointerId,
+      startX: pt.x,
+      startY: pt.y,
+      orig: { x: b.x, y: b.y, w: b.w, h: b.h }
+    };
+    try { ev.currentTarget.setPointerCapture(ev.pointerId); } catch (eCap) {}
+  }
+
+  function onMrzCropPointerMove(ev) {
+    if (!mrzCropState || !mrzCropState.drag) return;
+    if (ev.pointerId !== mrzCropState.drag.pointerId) return;
+    ev.preventDefault();
+    var d = mrzCropState.disp;
+    if (!d || !d.scale) return;
+    var pt = mrzCropPointerPos(ev);
+    var dx = (pt.x - mrzCropState.drag.startX) / d.scale;
+    var dy = (pt.y - mrzCropState.drag.startY) / d.scale;
+    var o = mrzCropState.drag.orig;
+    var handle = mrzCropState.drag.handle;
+    var box;
+    if (handle === "move") {
+      box = { x: o.x + dx, y: o.y + dy, w: o.w, h: o.h };
+    } else {
+      var x0 = o.x, y0 = o.y, x1 = o.x + o.w, y1 = o.y + o.h;
+      if (handle.indexOf("w") !== -1) x0 = o.x + dx;
+      if (handle.indexOf("e") !== -1) x1 = o.x + o.w + dx;
+      if (handle.indexOf("n") !== -1) y0 = o.y + dy;
+      if (handle.indexOf("s") !== -1) y1 = o.y + o.h + dy;
+      if (x1 < x0) { var tx = x0; x0 = x1; x1 = tx; }
+      if (y1 < y0) { var ty = y0; y0 = y1; y1 = ty; }
+      box = { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+    }
+    mrzCropState.box = clampMrzCropBox(box, mrzCropState.src.width, mrzCropState.src.height);
+    syncMrzCropBoxEl();
+  }
+
+  function onMrzCropPointerUp(ev) {
+    if (!mrzCropState || !mrzCropState.drag) return;
+    if (ev && ev.pointerId !== mrzCropState.drag.pointerId) return;
+    ev.preventDefault();
+    try { ev.currentTarget.releasePointerCapture(ev.pointerId); } catch (eRel) {}
+    mrzCropState.drag = null;
+  }
+
+  function onMrzCropKey(ev) {
+    if (!mrzCropState || !mrzCropState.open) return;
+    if (ev.key === "Escape") {
+      ev.preventDefault();
+      finishMrzCrop("cancel");
+    }
+  }
+
+  function closeMrzCropUI() {
+    var ov = el("mrzCropOverlay");
+    if (ov) {
+      ov.classList.add("hidden");
+      ov.setAttribute("hidden", "");
+    }
+    if (mrzCropState && mrzCropState.prevOverflow != null) {
+      document.body.style.overflow = mrzCropState.prevOverflow;
+    }
+    window.removeEventListener("resize", onMrzCropResize);
+    if (window.visualViewport) window.visualViewport.removeEventListener("resize", onMrzCropResize);
+    document.removeEventListener("keydown", onMrzCropKey);
+    if (mrzCropState) mrzCropState.open = false;
+  }
+
+  function finishMrzCrop(action) {
+    if (!mrzCropWait) return;
+    var resolve = mrzCropWait;
+    mrzCropWait = null;
+    var src = mrzCropState && mrzCropState.src;
+    var box = mrzCropState && mrzCropState.box;
+    var canvas = null;
+    if (action === "crop" && src && box) canvas = applyMrzCrop(src, box);
+    var rotated = !!(mrzCropState && mrzCropState.rotated);
+    closeMrzCropUI();
+    resolve({ action: action, canvas: canvas, src: src, box: box, rotated: rotated });
+  }
+
+  function rotateMrzCrop() {
+    if (!mrzCropState || !mrzCropState.open || !mrzCropState.src) return;
+    mrzCropState.src = mrzDrawRotated(mrzCropState.src, 90);
+    mrzCropState.rotated = true;
+    mrzCropState.touched = false;
+    mrzCropState.box = defaultMrzCropRect(mrzCropState.src, null, mrzCropState.mode);
+    layoutMrzCrop();
+    window.setTimeout(function () {
+      if (!mrzCropState || !mrzCropState.open || mrzCropState.touched) return;
+      try { mrzCropState.box = quickMrzCropRect(mrzCropState.src, mrzCropState.mode); } catch (eRot) {}
+      if (mrzCropState && mrzCropState.open) layoutMrzCrop();
+    }, 0);
+  }
+
+  function bindMrzCropUi() {
+    var box = el("mrzCropBox");
+    var handles, i;
+    if (box && !box._mrzBound) {
+      box._mrzBound = true;
+      box.addEventListener("pointerdown", onMrzCropPointerDown);
+      box.addEventListener("pointermove", onMrzCropPointerMove);
+      box.addEventListener("pointerup", onMrzCropPointerUp);
+      box.addEventListener("pointercancel", onMrzCropPointerUp);
+      handles = box.querySelectorAll(".mrz-crop-handle");
+      for (i = 0; i < handles.length; i++) {
+        handles[i].addEventListener("pointerdown", onMrzCropPointerDown);
+        handles[i].addEventListener("pointermove", onMrzCropPointerMove);
+        handles[i].addEventListener("pointerup", onMrzCropPointerUp);
+        handles[i].addEventListener("pointercancel", onMrzCropPointerUp);
+      }
+    }
+    function bindBtn(id, fn) {
+      var b = el(id);
+      if (b && !b._mrzBound) {
+        b._mrzBound = true;
+        b.addEventListener("click", fn);
+      }
+    }
+    bindBtn("mrzCropRead", function () { finishMrzCrop("crop"); });
+    bindBtn("mrzCropWhole", function () { finishMrzCrop("whole"); });
+    bindBtn("mrzCropRotate", function () { rotateMrzCrop(); });
+    bindBtn("mrzCropCancel", function () { finishMrzCrop("cancel"); });
+  }
+
+  var MRZ_CROP_HINTS = {
+    mrz: "Drag the box over the code lines, then tap Read this area.",
+    id: "Drag the box over the card. For the back of an ID or a passport, the code lines alone are enough. Then tap Read this area."
+  };
+  function openMrzCropUI(src, opts) {
+    bindMrzCropUi();
+    var mode = (opts && opts.mode) || "mrz";
+    var hintEl = el("mrzCropTitle");
+    if (hintEl) hintEl.textContent = MRZ_CROP_HINTS[mode] || MRZ_CROP_HINTS.mrz;
+    return new Promise(function (resolve) {
+      if (mrzCropWait) {
+        var old = mrzCropWait;
+        mrzCropWait = null;
+        closeMrzCropUI();
+        old({ action: "cancel", canvas: null, src: src, box: null });
+      }
+      var canvas = sourceToCanvas(src);
+      var ov = el("mrzCropOverlay");
+      if (!ov) {
+        resolve({ action: "whole", canvas: null, src: canvas, box: defaultMrzCropRect(canvas, null, mode) });
+        return;
+      }
+      mrzCropState = {
+        mode: mode,
+        src: canvas,
+        box: defaultMrzCropRect(canvas, null, mode),
+        disp: { x: 0, y: 0, w: 1, h: 1, scale: 1 },
+        drag: null,
+        rotated: false,
+        touched: false,
+        prevOverflow: document.body.style.overflow,
+        open: true
+      };
+      ov.classList.remove("hidden");
+      ov.removeAttribute("hidden");
+      document.body.style.overflow = "hidden";
+      window.addEventListener("resize", onMrzCropResize);
+      if (window.visualViewport) window.visualViewport.addEventListener("resize", onMrzCropResize);
+      document.addEventListener("keydown", onMrzCropKey);
+      layoutMrzCrop();
+      window.requestAnimationFrame(function () { layoutMrzCrop(); });
+      mrzCropWait = resolve;
+      var readBtn = el("mrzCropRead");
+      if (readBtn) try { readBtn.focus(); } catch (eF) {}
+      window.setTimeout(function () {
+        if (!mrzCropState || !mrzCropState.open || mrzCropState.touched) return;
+        try { mrzCropState.box = quickMrzCropRect(mrzCropState.src, mrzCropState.mode); } catch (eQ) {}
+        if (mrzCropState && mrzCropState.open && !mrzCropState.touched) layoutMrzCrop();
+      }, 0);
+    });
+  }
+
+  async function canvasFromMrzFile(file, onStatus) {
+    if (isProbablyPdf(file)) {
+      if (onStatus) onStatus("Opening PDF…");
+      var pdfjs = await loadPdfJsLibrary(onStatus);
+      var data = await file.arrayBuffer();
+      var loading = pdfjs.getDocument({ data: new Uint8Array(data), isEvalSupported: false, disableFontFace: false });
+      var pdf;
+      try {
+        pdf = await withTimeout(loading.promise, PDF_RENDER_MS, "This PDF is taking too long to open. Try a photo of the page instead.");
+      } catch (err) {
+        var msg = err && err.message ? String(err.message) : String(err || "");
+        if (/password/i.test(msg)) throw new Error("This PDF is locked. Save the page as a photo and try that, or use an unlocked PDF.");
+        throw err;
+      }
+      var canvas = await renderPdfPageToCanvas(pdf, 1);
+      if (pdf && pdf.destroy) try { await pdf.destroy(); } catch (eD) {}
+      return { src: canvas, isPdf: true, file: file };
+    }
+    if (onStatus) onStatus("Opening photo…");
+    var src = await loadMrzSource(file);
+    var canvas = sourceToCanvas(src);
+    if (src !== canvas && src.close) try { src.close(); } catch (eC) {}
+    return { src: canvas, isPdf: false, file: file };
+  }
+
+
   async function readMrz() {
-    showEidOcrStatus("Loading MRZ reader...");
     var images = collectMrzSourceItems(state.attachments || []);
     if (!images.length) {
       showEidOcrStatus("Take or attach a photo (or a PDF scan) of the ID back or passport photo page first. A photo of the whole page is fine — you don't need to crop to the code lines.");
@@ -6060,18 +7801,35 @@ function mapEidNationality(raw) {
     var btn = el("readMrz");
     var other = el("readCard");
     var prev = btn ? btn.textContent : "";
-    if (btn) { btn.disabled = true; btn.textContent = "Reading MRZ…"; }
+    if (btn) { btn.disabled = true; btn.textContent = "Choose area…"; }
     if (other) other.disabled = true;
     var worker = null;
     try {
-      var Tesseract = await loadTesseractLibrary(showEidOcrStatus);
-      worker = await createMrzOcrWorker(Tesseract, showEidOcrStatus);
       var best = { text: "", parsed: null, score: -1 };
       var i;
       for (i = 0; i < images.length; i++) {
         var file = images[i].file || images[i];
-        if (images.length > 1) showEidOcrStatus("Reading photo " + (i + 1) + " of " + images.length + "...");
-        var one = await recognizeMrzPhoto(worker, file, showEidOcrStatus);
+        var nOf = images.length > 1 ? ("Photo " + (i + 1) + " of " + images.length + ". ") : "";
+        showEidOcrStatus(nOf + "Choose the code area…");
+        var prepared = await canvasFromMrzFile(file, showEidOcrStatus);
+        var choice = await openMrzCropUI(prepared.src);
+        if (!choice || choice.action === "cancel") {
+          showEidOcrStatus("Cancelled. No details were filled.");
+          return null;
+        }
+        showEidOcrStatus(nOf + "Loading MRZ reader...");
+        if (btn) btn.textContent = "Reading MRZ…";
+        if (!worker) {
+          var Tesseract = await loadTesseractLibrary(showEidOcrStatus);
+          worker = await createMrzOcrWorker(Tesseract, showEidOcrStatus);
+        }
+        var one;
+        if (choice.action === "whole" && prepared.isPdf && !choice.rotated) {
+          one = await recognizeMrzPdf(worker, file, showEidOcrStatus);
+        } else {
+          var src = (choice.action === "crop" && choice.canvas) ? choice.canvas : (choice.src || prepared.src);
+          one = await recognizeMrzSource(worker, src, showEidOcrStatus, !!prepared.isPdf);
+        }
         if (one.score > best.score) best = one;
         if (mrzIsPass(one.parsed)) break;
       }
@@ -6086,12 +7844,538 @@ function mapEidNationality(raw) {
       return parsed;
     } catch (err) {
       if (worker && worker.terminate) try { await worker.terminate(); } catch (e) {}
+      closeMrzCropUI();
+      if (mrzCropWait) { var leftover = mrzCropWait; mrzCropWait = null; leftover({ action: "cancel", canvas: null, src: null, box: null }); }
       if (isCspOrReaderLoadError(err)) showEidOcrStatus(READER_PASTE_FALLBACK);
       else showEidOcrStatus(err && err.message ? err.message : "Could not read the MRZ.");
       return null;
     } finally {
+      closeMrzCropUI();
       if (btn) { btn.disabled = false; btn.textContent = prev || "Read ID / passport code (MRZ)"; }
       if (other) other.disabled = false;
+    }
+  }
+
+  /* ---------- One button: Read ID (front or back) ---------- */
+  var ARA_READY_KEY = "matty-forms-ara-ready";
+  var ID_SESSION_MS = 30 * 60 * 1000;
+  var ID_KEYS = ["name", "surname", "gender", "dob", "nationality", "docNumber", "countryFrom", "countryOfBirth"];
+  var ID_FIELD_IDS = { name: "patientName", surname: "patientSurname", gender: "gender", dob: "dateOfBirth", nationality: "nationality", docNumber: "eid", countryFrom: "countryFrom", countryOfBirth: "countryOfBirth" };
+  var ID_FIELD_LABELS = { name: "Name", surname: "Surname", gender: "Gender", dob: "Date of birth", nationality: "Nationality", docNumber: "ID / Passport", countryFrom: "Country (from)", countryOfBirth: "Country of birth" };
+  var ID_SOURCE_LABELS = {
+    "mrz": "the code lines (MRZ)",
+    "eid-front": "the Emirates ID front",
+    "sa-front": "the SA ID front",
+    "saudi-front": "the Saudi ID front",
+    "general": "the card front",
+    "general-ara": "the card front (with Arabic)"
+  };
+  var idReadSession = null;
+
+  function resetIdReadSession() { idReadSession = null; }
+
+  function activeIdReadSession(nowMs) {
+    if (!idReadSession) return null;
+    if ((nowMs || Date.now()) - idReadSession.at > ID_SESSION_MS) { idReadSession = null; return null; }
+    return idReadSession;
+  }
+
+  function idFormValue(key, st) {
+    st = st || state;
+    switch (key) {
+      case "name": return String(st.patientName || "").trim();
+      case "surname": return String(st.patientSurname || "").trim();
+      case "gender": return String(st.gender || "").trim();
+      case "dob": return String(st.dateOfBirth || "").trim();
+      case "nationality": return String(st.nationality || "").trim();
+      case "docNumber": return String(st.eid || "").trim();
+      case "countryFrom": return String(st.countryFrom || "").trim();
+      case "countryOfBirth": return String(st.countryOfBirth || "").trim();
+    }
+    return "";
+  }
+
+  function idParsedValue(p, key) {
+    if (!p) return "";
+    if (key === "docNumber") return p.eid || p.docNumber || p.idNumber || "";
+    if (key === "countryFrom") return p.countryFrom || inferCountryFrom(p) || "";
+    return p[key] || "";
+  }
+
+  function latinWords(s) {
+    var t = String(s || "");
+    try { t = t.normalize("NFD").replace(/[\u0300-\u036f]/g, ""); } catch (e) {}
+    return t.toUpperCase().split(/[^A-Z]+/).filter(function (w) { return w.length >= 2; });
+  }
+  function shareWord(a, b) {
+    var wa = latinWords(a), wb = latinWords(b);
+    if (!wa.length || !wb.length) return true; // can't compare (e.g. Arabic vs Latin)
+    for (var i = 0; i < wa.length; i++) if (wb.indexOf(wa[i]) !== -1) return true;
+    return false;
+  }
+  // A front read after a code-line read: is it clearly someone else?
+  function idLooksLikeDifferentPerson(session, front) {
+    if (!session || !front) return false;
+    var f = session.fields || {};
+    if (f.dob && f.dob.source === "mrz" && front.dob && front.dob !== f.dob.value) return true;
+    var sn = f.surname && f.surname.source === "mrz" ? f.surname.value : "";
+    var gn = f.name && f.name.source === "mrz" ? f.name.value : "";
+    if (sn && front.surname && !shareWord(sn + " " + gn, front.surname + " " + (front.name || ""))) return true;
+    return false;
+  }
+
+  /*
+   * Merge this scan's reads (and an earlier scan of the same card) into one set of values.
+   * MRZ values win. A card front only fills what the MRZ didn't give, and never replaces
+   * an MRZ value from an earlier scan that is still in the form.
+   * Returns { parsed, sources, kept, mrz, front }.
+   */
+  function mergeIdReads(results, session, formState, nowMs) {
+    results = results || [];
+    var mrz = null, front = null;
+    results.forEach(function (r) {
+      if (!r || !r.parsed) return;
+      if (r.kind === "mrz") {
+        if (!mrz || mrzParseRank(r.parsed) > mrzParseRank(mrz.parsed)) mrz = r;
+      } else if (!front || countParsedFields(r.parsed) > countParsedFields(front.parsed)) {
+        front = r;
+      }
+    });
+    var out = { cardKind: "id-merged", highlightMissingCountries: true, unsure: [], notes: [] };
+    var sources = {};
+    var kept = [];
+    ID_KEYS.forEach(function (k) {
+      var mv = mrz ? idParsedValue(mrz.parsed, k) : "";
+      var fv = front ? idParsedValue(front.parsed, k) : "";
+      if (mv) {
+        out[k] = mv;
+        sources[k] = "mrz";
+        if (k === "nationality") out.nationalityOther = mrz.parsed.nationalityOther || "";
+      } else if (fv) {
+        out[k] = fv;
+        sources[k] = front.kind;
+        if (k === "nationality") out.nationalityOther = front.parsed.nationalityOther || "";
+        if (front.parsed.unsure && front.parsed.unsure.indexOf(ID_FIELD_IDS[k]) !== -1) out.unsure.push(ID_FIELD_IDS[k]);
+      }
+    });
+    if (session && !mrz && front && idLooksLikeDifferentPerson(session, front.parsed)) {
+      session = null;
+      out.newPerson = true;
+    }
+    if (session) {
+      ID_KEYS.forEach(function (k) {
+        var prev = session.fields[k];
+        if (!prev) return;
+        var nowVal = idFormValue(k, formState);
+        if (!nowVal || nowVal !== prev.value) return;      // changed or cleared by hand: don't protect
+        if (sources[k] === "mrz") return;                   // new code lines always win
+        if (prev.source === "mrz" || !sources[k]) {
+          out[k] = nowVal;
+          if (k === "nationality") out.nationalityOther = (formState || state).nationalityOther || "";
+          if (k === "docNumber") out.eid = nowVal;
+          var u = out.unsure.indexOf(ID_FIELD_IDS[k]);
+          if (u !== -1) out.unsure.splice(u, 1);
+          if (prev.unsure) out.unsure.push(ID_FIELD_IDS[k]);
+          sources[k] = "kept:" + prev.source;
+          kept.push(k);
+        }
+      });
+    }
+    // Saudi cards: the 10-digit national number on the front is the ID people use, not the card number in the code lines.
+    if (front && front.kind === "saudi-front" && /^[12]\d{9}$/.test(front.parsed.eid || "") && sources.docNumber === "mrz" &&
+        (!mrz.parsed.issuingState || mrz.parsed.issuingState === "SAU")) {
+      out.docNumber = front.parsed.eid;
+      sources.docNumber = front.kind;
+    }
+    if (out.docNumber) out.eid = out.docNumber;
+    if (mrz) {
+      out.checks = mrz.parsed.checks;
+      out.confidence = mrz.parsed.confidence;
+      if (mrz.parsed.issuingState) out.issuingState = mrz.parsed.issuingState;
+    }
+    if (front && front.parsed.notes) out.notes = front.parsed.notes.slice();
+    if (front && front.parsed.idNumber && front.parsed.luhnOk === false && sources.docNumber === front.kind) out.notes.push("SA ID number check failed, please check it.");
+    return { parsed: out, sources: sources, kept: kept, mrz: mrz, front: front };
+  }
+
+  function mrzParseRank(p) {
+    if (!p || !p.ok) return -1;
+    return (p.confidence === "pass" ? 300 : p.confidence === "mixed" ? 200 : 100) + countParsedFields(p);
+  }
+
+  function rememberIdRead(merged) {
+    var fields = (idReadSession && !merged.parsed.newPerson) ? idReadSession.fields : {};
+    ID_KEYS.forEach(function (k) {
+      var src = merged.sources[k];
+      if (!src || src.indexOf("kept:") === 0) return;
+      var v = idFormValue(k);
+      if (!v) return;
+      fields[k] = { source: src === "mrz" ? "mrz" : src, value: v, unsure: merged.parsed.unsure.indexOf(ID_FIELD_IDS[k]) !== -1 };
+    });
+    idReadSession = { at: Date.now(), fields: fields };
+  }
+
+  function applyIdMerged(merged) {
+    var parsed = merged.parsed;
+    var applied = applyParsedCardFields(parsed);
+    var chk = parsed.checks || {};
+    var m = merged.mrz && merged.mrz.parsed;
+    if (m && m.ok && m.confidence !== "pass") {
+      if ((!chk.document || !chk.composite) && merged.sources.docNumber === "mrz") markFieldCheck("eid", true);
+      if ((!chk.dob || !chk.composite) && merged.sources.dob === "mrz") markFieldCheck("dateOfBirth", true);
+      if (m.confidence === "fail") {
+        [["name", "patientName"], ["surname", "patientSurname"], ["gender", "gender"], ["nationality", "nationality"]].forEach(function (p) {
+          if (merged.sources[p[0]] === "mrz") markFieldCheck(p[1], true);
+        });
+      }
+    }
+    if (typeof touchForm === "function") touchForm();
+    if (typeof refresh === "function") refresh();
+    return applied;
+  }
+
+  function formatIdReadStatus(merged, extra) {
+    extra = extra || {};
+    var groups = {};
+    var order = [];
+    var missing = [];
+    ID_KEYS.forEach(function (k) {
+      var src = merged.sources[k];
+      if (!src) { missing.push(ID_FIELD_LABELS[k]); return; }
+      var label = src.indexOf("kept:") === 0
+        ? "Kept from your earlier scan of " + (ID_SOURCE_LABELS[src.slice(5)] || src.slice(5))
+        : "From " + (ID_SOURCE_LABELS[src] || src);
+      if (!groups[label]) { groups[label] = []; order.push(label); }
+      groups[label].push(ID_FIELD_LABELS[k]);
+    });
+    if (!order.length) {
+      return "Done: couldn't read the ID. Try a sharper, closer photo with no glare, or crop to the card. For a passport or the back of an ID, crop to the code lines. Check every field by hand.";
+    }
+    var parts = ["Done."];
+    order.forEach(function (label) { parts.push(label + ": " + groups[label].join(", ") + "."); });
+    if (missing.length) parts.push("Couldn't find: " + missing.join(", ") + ".");
+    var m = merged.mrz && merged.mrz.parsed;
+    if (m && m.ok) {
+      if (m.confidence === "pass") parts.push("Code line check digits: pass.");
+      else parts.push("Code line check digits: " + (m.confidence || "fail") + ", please check the highlighted boxes.");
+      if (m.corrected && m.corrected.length) parts.push("Corrected " + m.corrected.join(", ") + ".");
+    }
+    if (merged.parsed.newPerson) parts.push("This looks like a different person from the last scan, so the old code-line values were replaced.");
+    if (merged.kept.length && !merged.mrz) parts.push("Code-line values were not changed by the front.");
+    (merged.parsed.notes || []).forEach(function (n) { if (n) parts.push(n.charAt(0).toUpperCase() + n.slice(1).replace(/\.?$/, ".")); });
+    (extra.notes || []).forEach(function (n) { parts.push(n); });
+    var anyHighlight = missing.length || (merged.parsed.unsure && merged.parsed.unsure.length) || (m && m.ok && m.confidence !== "pass");
+    parts.push(anyHighlight ? "Please check the highlighted boxes, and check every field by hand." : "Check every field by hand.");
+    return parts.join(" ");
+  }
+
+  async function createAraOcrWorker(Tesseract, onStatus) {
+    var ready = false;
+    try { ready = localStorage.getItem(ARA_READY_KEY) === "1"; } catch (e) {}
+    var first = ready ? "Loading Arabic reader…" : "Downloading Arabic reading file (first time only)…";
+    if (onStatus) onStatus(first);
+    function opts(blob) {
+      return {
+        workerPath: TESS_WORKER_PATH,
+        corePath: TESS_CORE_PATH,
+        langPath: TESS_LANG_PATH,
+        workerBlobURL: blob,
+        cacheMethod: "write",
+        logger: function (m) {
+          if (!onStatus || !m || !m.status) return;
+          var st = String(m.status);
+          if (st.indexOf("loading language traineddata") !== -1 && !ready) {
+            var pct = typeof m.progress === "number" ? Math.round(m.progress * 100) : 0;
+            onStatus("Downloading Arabic reading file (first time only)…" + (pct > 0 && pct < 100 ? " " + pct + "%" : ""));
+          } else if (st.indexOf("initializ") !== -1) {
+            onStatus("Starting Arabic reader…");
+          }
+        }
+      };
+    }
+    var w;
+    try {
+      w = await withTimeout(Tesseract.createWorker("ara", 1, opts(true)), 90000, "Downloading the Arabic reading file timed out.");
+    } catch (err) {
+      w = await withTimeout(Tesseract.createWorker("ara", 1, opts(false)), 90000, "Downloading the Arabic reading file timed out.");
+    }
+    try { localStorage.setItem(ARA_READY_KEY, "1"); } catch (e2) {}
+    return w;
+  }
+
+  async function readArabicPass(araWorker, src, angle, onStatus) {
+    if (onStatus) onStatus("Reading the Arabic writing…");
+    var canvas = await prepareEidImage(src, angle || 0, "contrast");
+    var best = null, bestText = [];
+    var psms = [6, 4];
+    for (var i = 0; i < psms.length; i++) {
+      var rec = await recognizeCanvasPsm(araWorker, canvas, psms[i]);
+      bestText.push(rec.text || "");
+      var p = GeneralCard.parse(rec.lines && rec.lines.length ? { text: rec.text, lines: rec.lines } : rec.text);
+      if (!best || GeneralCard.countFields(p) > GeneralCard.countFields(best)) best = p;
+      if (GeneralCard.countFields(best) >= 5) break;
+    }
+    return { parsed: best, text: mergeOcrTexts(bestText) };
+  }
+
+  // Read the block the quick finder found with the English reader (plain letters and "<" only).
+  // Some cards print code lines the code-line reader struggles with; the English reader often still gets them.
+  async function readMrzBlockWithEng(engW, src, hit) {
+    if (!hit || !hit.loc || !engW) return null;
+    var longSide = Math.max(src.width || 0, src.height || 0);
+    var k = longSide > 1600 ? longSide / 1600 : 1;
+    var base = hit.angle ? mrzDrawRotated(src, hit.angle) : src;
+    var L = hit.loc, ch = (L.charH || 12) * k;
+    var crop = mrzCropCanvas(base, L.x * k - ch * 1.2, L.y * k - ch * 0.8, L.w * k + ch * 2.4, L.h * k + ch * 1.6);
+    var f = 30 / Math.max(4, ch);
+    if (f < 0.6) f = 0.6;
+    if (f > 3) f = 3;
+    var scaled = mrzScaleCanvas(crop, Math.max(1, Math.round(crop.width * f)));
+    var best = null;
+    try {
+      await engW.setParameters({ tessedit_char_whitelist: "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<" });
+      var rec = await recognizeCanvasPsm(engW, scaled, 6);
+      var text = String(rec.text || "").replace(/ /g, "");
+      var parsed = MrzTd1.parseMrz(text);
+      if (parsed && parsed.ok) best = { text: text, confidence: rec.confidence, parsed: parsed };
+    } finally {
+      try { await engW.setParameters({ tessedit_char_whitelist: "" }); } catch (eP) {}
+    }
+    return best;
+  }
+
+  // How unlikely a name read from code lines looks: runs of 3+ consonants ("AHDVWAD", "ARFHHRAHUVBAN").
+  function mrzNameOddness(p) {
+    var n = String((p && (p.surname + " " + p.name)) || "").toUpperCase();
+    var runs = n.match(/[BCDFGHJKLMNPQRSTVWXZ]{3,}/g) || [];
+    var odd = 0;
+    runs.forEach(function (r) { if (!/^(SCH|STR|NGH|CHR|THR|SHR|NDR|MPS|NTH|RST)/.test(r) || r.length > 3) odd += r.length - 2; });
+    return odd;
+  }
+
+  var ID_READ_MAX_SIDE = 2400;
+  var ID_WORKER_IDLE_MS = 5 * 60 * 1000;
+  // Readers stay loaded between reads (closed after a few idle minutes), so the next read starts at once.
+  var idWorkerCache = { mrz: null, eng: null, ara: null };
+  var idWorkerIdleTimer = null;
+  function getIdWorker(workers, kind, Tesseract, say) {
+    if (workers[kind]) return Promise.resolve(workers[kind]);
+    var pk = kind + "Pending";
+    if (!workers[pk]) {
+      var make = kind === "mrz" ? createMrzOcrWorker : (kind === "ara" ? createAraOcrWorker : createEidOcrWorker);
+      workers[pk] = Promise.resolve(make(Tesseract, say)).then(function (w) {
+        workers[kind] = w; workers[pk] = null; return w;
+      }, function (err) {
+        workers[pk] = null; throw err;
+      });
+    }
+    return workers[pk];
+  }
+  // Start loading the readers in the background while the crop screen is open.
+  function prewarmIdWorkers(workers) {
+    if (idWorkerIdleTimer) { clearTimeout(idWorkerIdleTimer); idWorkerIdleTimer = null; }
+    var quiet = function () {};
+    loadTesseractLibrary(quiet).then(function (T) {
+      getIdWorker(workers, "mrz", T, quiet).catch(function () {});
+      getIdWorker(workers, "eng", T, quiet).catch(function () {});
+    }).catch(function () {});
+  }
+  async function closeIdWorkers(workers) {
+    var keys = ["mrz", "eng", "ara"];
+    for (var i = 0; i < keys.length; i++) {
+      var w = workers[keys[i]];
+      workers[keys[i]] = null;
+      if (w && w.terminate) { try { await w.terminate(); } catch (eT) {} }
+    }
+  }
+  function scheduleIdWorkerClose(workers) {
+    if (idWorkerIdleTimer) clearTimeout(idWorkerIdleTimer);
+    idWorkerIdleTimer = setTimeout(function () { idWorkerIdleTimer = null; closeIdWorkers(workers); }, ID_WORKER_IDLE_MS);
+  }
+
+  // True when an MRZ read is trustworthy enough to skip reading the card front.
+  function mrzReadLooksReal(p) {
+    if (!p || !p.ok) return false;
+    if (p.confidence === "pass") return true;
+    // Real code lines are full of "<" fillers; random printed text read as code lines has few or none,
+    // even when a check digit happens to match by chance.
+    var raw = String(p.rawText || "");
+    var chevrons = (raw.match(/</g) || []).length;
+    var fillers = (raw.match(/<</g) || []).length;
+    if (p.confidence === "mixed") return chevrons >= 5 && fillers >= 1;
+    return chevrons >= 6 && fillers >= 2;
+  }
+
+  // Read one prepared picture: code lines first, then the card front. Returns { kind, parsed }.
+  async function readIdSource(src, o) {
+    var say = o.say || function () {};
+    var workers = o.workers;
+    var Tesseract = o.Tesseract;
+    var rawParts = o.rawParts || [];
+    var notes = o.notes || [];
+    // Big phone photos make every step slow; this size still gives sharp letters.
+    if (src && !o.pdfFile) src = downscaleCanvasTo(src, ID_READ_MAX_SIDE);
+    // 1) Fast code-line finder (no OCR). Code lines are the most accurate, so try them first,
+    //    but only the quick cut-out reads; the slow full search runs later and only if the front gives nothing.
+    say("Looking for the code lines (MRZ)…");
+    var hit = findMrzLinesQuick(src);
+    var res = null;
+    var weakMrz = null;
+    function tryMrz(one) {
+      if (!(one && one.parsed && one.parsed.ok)) return null;
+      if (mrzReadLooksReal(one.parsed)) {
+        rawParts.push(one.parsed.rawText || one.text || "");
+        return { kind: "mrz", parsed: one.parsed };
+      }
+      // Printed lines on a card front (e.g. Emirates ID) can look like code lines to the quick finder.
+      // A read with failed check digits and no "<<" fillers is not real code lines, so read the front instead
+      // and only fall back to this weak read if the front gives nothing.
+      if (!weakMrz || mrzParseRank(one.parsed) > mrzParseRank(weakMrz.parsed)) weakMrz = { kind: "mrz", parsed: one.parsed, raw: one.parsed.rawText || one.text || "" };
+      return null;
+    }
+    var slowDone = false;
+    if (hit) {
+      var mrzW = await getIdWorker(workers, "mrz", Tesseract, say);
+      var fastOne = o.pdfFile
+        ? await recognizeMrzPdf(mrzW, o.pdfFile, say)
+        : await recognizeMrzSource(mrzW, src, say, !!o.isPdf, "fast");
+      res = tryMrz(fastOne);
+      if (res && res.parsed.confidence !== "pass" && !o.pdfFile) {
+        // Not every check digit passed: a second opinion from the English reader is cheap. Use it if it is
+        // better, or equally good with a more believable name (blurry code lines turn M into "DVW", "HH"…).
+        try {
+          var second = await readMrzBlockWithEng(await getIdWorker(workers, "eng", Tesseract, say), src, hit);
+          if (second && second.parsed && mrzReadLooksReal(second.parsed)) {
+            var r1 = mrzParseRank(res.parsed), r2 = mrzParseRank(second.parsed);
+            var sameNums = second.parsed.dob === res.parsed.dob;
+            var w1 = mrzNameOddness(res.parsed), w2 = mrzNameOddness(second.parsed);
+            if (r2 > r1 || (r2 === r1 && sameNums && w2 < w1)) {
+              rawParts[rawParts.length - 1] = second.parsed.rawText || second.text || "";
+              res = { kind: "mrz", parsed: second.parsed };
+            }
+          }
+        } catch (eSecond) {}
+      }
+      if (res) return res;
+      if (o.debug) o.debug("fastChev=" + (fastOne && fastOne.fastChev));
+      // A turned or tilted photo: try the photo at each quarter turn (a few quick reads) before the card front.
+      // Only when the block found really looks like code lines (printed card text scores lower).
+      if (!o.pdfFile && hit.loc && hit.loc.like >= 0.8) {
+        res = tryMrz(await recognizeMrzSource(mrzW, src, say, false, "turn"));
+        if (res) return res;
+      }
+      // The quick read saw plenty of "<" fillers: these are code lines, just hard to read. Search properly now.
+      if (!o.pdfFile && fastOne && (fastOne.fastChev || 0) >= 8) {
+        say("Looking harder for the code lines…");
+        var engTry = await readMrzBlockWithEng(await getIdWorker(workers, "eng", Tesseract, say), src, hit);
+        res = tryMrz(engTry);
+        if (res) return res;
+        slowDone = true;
+        res = tryMrz(await recognizeMrzSource(mrzW, src, say, false, "slow"));
+        if (res) return res;
+      }
+    }
+    // 2) Card front: Emirates ID / SA ID parsers, else the general reader.
+    say(hit ? "Couldn't read the code lines. Reading the card front…" : "No code lines found. Reading the card front…");
+    var engW = await getIdWorker(workers, "eng", Tesseract, say);
+    var best = await recognizePhotoBest(engW, src, say, 0, 1);
+    var parsed = best.parsed || parseCardFrontText(best.text || "");
+    var text = best.text || "";
+    if (typeof MrzTd1 !== "undefined" && MrzTd1.looksLikeMrz(text)) {
+      var mp = MrzTd1.parseMrz(text);
+      // Only trust code lines seen by the front reader when they really are code lines.
+      var chevrons = (text.match(/<</g) || []).length;
+      if (mp && mp.ok && chevrons >= 2 && mrzReadLooksReal(mp)) {
+        rawParts.push(mp.rawText || text);
+        return { kind: "mrz", parsed: mp };
+      }
+    }
+    // 3) Front gave little: run the slow, thorough code-line search (only when code lines may be there).
+    var knownFront = parsed.cardKind === "eid-front" || parsed.cardKind === "sa-front" || parsed.cardKind === "saudi-front";
+    if (!slowDone && !o.pdfFile && !knownFront && countParsedFields(parsed) < 3 && (hit || (text.match(/</g) || []).length >= 4)) {
+      say("Looking harder for the code lines…");
+      var mrzW2 = await getIdWorker(workers, "mrz", Tesseract, say);
+      res = tryMrz(await recognizeMrzSource(mrzW2, src, say, false, "slow"));
+      if (res) return res;
+    }
+    var kind = (parsed.cardKind === "sa-front" || parsed.cardKind === "eid-front" || parsed.cardKind === "saudi-front") ? parsed.cardKind : "general";
+    if (weakMrz && kind === "general" && countParsedFields(parsed) < 2 && countParsedFields(weakMrz.parsed) > countParsedFields(parsed)) {
+      rawParts.push(weakMrz.raw);
+      return { kind: "mrz", parsed: weakMrz.parsed };
+    }
+    if (kind === "general" && typeof GeneralCard !== "undefined" && GeneralCard.needsArabic(parsed, text, o.forceArabic)) {
+      try {
+        var araW = await getIdWorker(workers, "ara", Tesseract, say);
+        var ara = await readArabicPass(araW, src, best.angle, say);
+        if (ara && ara.parsed) {
+          parsed = GeneralCard.mergeReads(parsed, ara.parsed);
+          if (parsed.usedArabic) kind = "general-ara";
+          if (ara.text) text = mergeOcrTexts([{ text: text }, { text: ara.text }]);
+        }
+      } catch (araErr) {
+        notes.push("The Arabic reading file couldn't be downloaded, so only the English writing was read.");
+      }
+    }
+    rawParts.push(text);
+    return { kind: kind, parsed: parsed };
+  }
+
+  async function readId() {
+    var items = collectMrzSourceItems(state.attachments || []);
+    if (!items.length) {
+      showEidOcrStatus("Take or attach a photo (or a PDF scan) of the ID front or back, or the passport photo page, first.");
+      return null;
+    }
+    var btn = el("readId");
+    var prev = btn ? btn.textContent : "";
+    if (btn) { btn.disabled = true; btn.textContent = "Choose area…"; }
+    var workers = idWorkerCache;
+    prewarmIdWorkers(workers);
+    var forceArabic = !!(el("cardHasArabic") && el("cardHasArabic").checked);
+    var notes = [];
+    try {
+      var results = [];
+      var rawParts = [];
+      var Tesseract = null;
+      for (var i = 0; i < items.length; i++) {
+        var file = items[i].file || items[i];
+        var nOf = items.length > 1 ? ("Photo " + (i + 1) + " of " + items.length + ". ") : "";
+        var say = function (msg) { showEidOcrStatus(nOf + msg); };
+        say("Choose the area to read…");
+        var prepared = await canvasFromMrzFile(file, say);
+        var choice = await openMrzCropUI(prepared.src, { mode: "id" });
+        if (!choice || choice.action === "cancel") {
+          showEidOcrStatus("Cancelled. No details were filled.");
+          return null;
+        }
+        if (btn) btn.textContent = "Reading…";
+        var src = (choice.action === "crop" && choice.canvas) ? choice.canvas : (choice.src || prepared.src);
+        if (!Tesseract) Tesseract = await loadTesseractLibrary(say);
+        var res = await readIdSource(src, {
+          Tesseract: Tesseract, workers: workers, say: say, forceArabic: forceArabic, notes: notes, rawParts: rawParts,
+          pdfFile: (choice.action === "whole" && prepared.isPdf && !choice.rotated) ? file : null, isPdf: !!prepared.isPdf
+        });
+        results.push(res);
+      }
+      var merged = mergeIdReads(results, activeIdReadSession(), state);
+      var raw = rawParts.filter(Boolean).join("\n\n").trim();
+      if (raw) writeEidPasteBox(raw);
+      applyIdMerged(merged);
+      rememberIdRead(merged);
+      showEidOcrStatus(formatIdReadStatus(merged, { notes: notes }));
+      return merged;
+    } catch (err) {
+      closeMrzCropUI();
+      if (mrzCropWait) { var leftover = mrzCropWait; mrzCropWait = null; leftover({ action: "cancel", canvas: null, src: null, box: null }); }
+      // A reader that timed out may be stuck; start fresh next time.
+      await closeIdWorkers(workers);
+      if (isCspOrReaderLoadError(err)) showEidOcrStatus(READER_PASTE_FALLBACK);
+      else showEidOcrStatus(err && err.message ? err.message : "Could not read the ID.");
+      return null;
+    } finally {
+      closeMrzCropUI();
+      scheduleIdWorkerClose(workers);
+      if (btn) { btn.disabled = false; btn.textContent = prev || "Read ID (front or back)"; }
     }
   }
 
@@ -6252,8 +8536,8 @@ function mapEidNationality(raw) {
     if (norm.kind === "eid") maybeAdvanceEid();
     else eidAdvanceArmed = true;
   });
-  el("readCard").addEventListener("click", function () { readCard(); });
-  el("readMrz").addEventListener("click", function () { readMrz(); });
+  el("readId").addEventListener("click", function () { readId(); });
+  bindMrzCropUi();
   el("fillFromCardText").addEventListener("click", function () {
     applyCardText(el("eidPaste").value, function (parsed) {
       var applied = applyParsedToEmptyFields(parsed);
@@ -6369,6 +8653,28 @@ function mapEidNationality(raw) {
     parseTd1Mrz: (typeof MrzTd1 !== "undefined" ? MrzTd1.parseTd1Mrz : null),
     parseMrz: (typeof MrzTd1 !== "undefined" ? MrzTd1.parseMrz : null),
     readMrz: readMrz,
+    readId: readId,
+    readIdSource: readIdSource,
+    recognizePhotoBest: recognizePhotoBest,
+    recognizeMrzSource: recognizeMrzSource,
+    mrzReadStrip: mrzReadStrip,
+    frontReadComplete: frontReadComplete,
+    mergeIdReads: mergeIdReads,
+    formatIdReadStatus: formatIdReadStatus,
+    applyIdMerged: applyIdMerged,
+    rememberIdRead: rememberIdRead,
+    activeIdReadSession: activeIdReadSession,
+    resetIdReadSession: resetIdReadSession,
+    findMrzLinesQuick: findMrzLinesQuick,
+    looksLikeEidFront: looksLikeEidFront,
+    parseCardFrontKnown: parseCardFrontKnown,
+    defaultMrzCropRect: defaultMrzCropRect,
+    quickMrzCropRect: quickMrzCropRect,
+    clampMrzCropBox: clampMrzCropBox,
+    applyMrzCrop: applyMrzCrop,
+    mrzCropCanvas: mrzCropCanvas,
+    mrzLocate: mrzLocate,
+    mrzDrawRotated: mrzDrawRotated,
     parseSaIdNumber: (typeof SaId !== "undefined" ? SaId.parseSaIdNumber : null),
     parseSaIdText: (typeof SaId !== "undefined" ? SaId.parseSaIdText : null),
     parseSaIdFrontText: (typeof SaId !== "undefined" ? SaId.parseSaIdFrontText : null),
@@ -6386,5 +8692,6 @@ function mapEidNationality(raw) {
   refresh();
 })();
   </script>
+
 </body>
 </html>
